@@ -1,0 +1,20 @@
+FROM maven:3.9-eclipse-temurin-17 AS builder
+
+WORKDIR /build
+COPY docker/maven-settings-docker.xml /root/.m2/settings.xml
+COPY pom.xml ./
+COPY src ./src
+
+RUN --mount=type=cache,target=/root/.m2/repository \
+    mvn -B \
+    -Dtest=KnowledgeRebuildRunnerTest,DocumentProcessTaskRebuildSafetyTest,KnowledgeBaseServiceImplTest,VisionRecognizerTest \
+    test -s /root/.m2/settings.xml \
+ && \
+    mvn -B \
+    -Dmaven.wagon.http.retryHandler.count=5 \
+    -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 \
+    clean package -DskipTests -Dmaven.test.skip=true -s /root/.m2/settings.xml \
+ && cp target/*.jar /build/app.jar
+
+FROM mindcrew/backend:pre-rebuild-20260823
+COPY --from=builder /build/app.jar /app/app.jar

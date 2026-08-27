@@ -1,0 +1,47 @@
+# 构建产物
+target/
+*.jar
+*.war
+*.class
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Git
+.git/
+.gitignore
+
+# Frontend（独立镜像）
+MindCrew-frontend/
+!MindCrew-frontend/
+MindCrew-frontend/*
+!MindCrew-frontend/dist/
+!MindCrew-frontend/dist/**
+
+# 数据/上传
+uploads/
+logs/
+*.log
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# 文档/资料（占空间且不需要进镜像）
+MindCrew资料合集/
+docs/
+*.md
+!sql/README.md
+
+# 测试
+src/test/
+!src/test/
+!src/test/**
+
+# 临时文件
+*.swp
+*.tmp
+.DS_Store

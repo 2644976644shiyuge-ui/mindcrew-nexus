@@ -1,0 +1,276 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: MindCrew
+
+  # Spring AI 配置（OpenAI 兼容格式）。默认阿里云百炼 DashScope；
+  # 离线时把 LLM_BASE_URL 指向本地 OpenAI 兼容服务（vLLM / Ollama），模型名按本地部署改。
+  ai:
+    openai:
+      api-key: ${BAILIAN_API_KEY:sk-local}
+      base-url: ${LLM_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+      chat:
+        options:
+          model: ${LLM_CHAT_MODEL:qwen-plus}
+          temperature: 0.7
+      embedding:
+        options:
+          model: ${EMBEDDING_MODEL:text-embedding-v3}
+          dimensions: ${EMBEDDING_DIM:1024}
+    mcp:
+      server:
+        enabled: true
+        name: ZYCOO Nexus MCP Server
+        version: 1.0.0
+        type: SYNC
+        instructions: 提供 ZYCOO Nexus agentic RAG 工具能力，支持 doc_search、keyword_search、web_search、recall_memory、store_memory。
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/docmind?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+  # 文件上传 · 放开到 1300MB 支持长录音/长视频
+  servlet:
+    multipart:
+      max-file-size: 1300MB
+      max-request-size: 1300MB
+      file-size-threshold: 10MB     # 超过此阈值的写临时文件而非内存（减小堆压力）
+
+  # Jackson 配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    serialization:
+      write-dates-as-timestamps: false
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+  type-aliases-package: com.simon.MindCrew.entity
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# ═══════════════════════════════════════════════════════════════════
+# 对象存储 · MinIO（开发/私有化）vs OSS（阿里云生产）
+# 切换方式：改 storage.type 的值即可（minio | oss），后端代码不动
+# ═══════════════════════════════════════════════════════════════════
+# 加密主密钥（用于 AES 加密存储 LLM Provider API Key 等敏感配置）
+# ⚠️ 生产环境必须改成长随机串，通过环境变量注入: CRYPTO_MASTER_KEY=xxx
+crypto:
+  master-key: ${CRYPTO_MASTER_KEY:please-change-me-in-production-32chars-min}
+
+storage:
+  type: ${STORAGE_TYPE:oss}    # 默认 oss；本地想用 minio 时 export STORAGE_TYPE=minio
+
+# ─── MinIO 配置（storage.type=minio 时生效）────────────────────
+minio:
+  endpoint:    ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key:  ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key:  ${MINIO_SECRET_KEY:minioadmin}
+  bucket-name: ${MINIO_BUCKET_NAME:mindcrew}
+
+# ─── 阿里云 OSS 配置（storage.type=oss 时生效）─────────────────
+# 拿这 5 个信息步骤:
+#   1. https://oss.console.aliyun.com 创建 Bucket → 拿到 endpoint / region / bucket
+#   2. https://ram.console.aliyun.com 创建 RAM 子账号 → 拿到 AccessKey ID + Secret
+#   3. 给子账号授权 AliyunOSSFullAccess（或自定义只授权这一个 Bucket）
+oss:
+  endpoint:    ${OSS_ENDPOINT:https://oss-cn-beijing.aliyuncs.com}   # 必须带 https://
+  region:      ${OSS_REGION:cn-beijing}                              # 跟 endpoint 对应的地域 ID
+  bucket:      ${OSS_BUCKET:mindcrew-prod}                            # 改成你的 Bucket 名
+  access-key:  ${OSS_ACCESS_KEY:}         # ⚠ 务必用环境变量注入，不要写进代码仓库
+  secret-key:  ${OSS_SECRET_KEY:}         # ⚠ 同上 · 提交 git 前必删
+  custom-domain: ${OSS_CUSTOM_DOMAIN:}                                # 可选 · CDN 加速域名
+  url-expire-days: 7                                                  # 预签名 URL 有效期（天），DashScope 拿到要够它处理完
+
+# ─── 阿里云账单 BSS Open API · 任务 13.7 真实账单对账 ─────────
+# 拿凭证步骤：
+#   1. 用「主账号」登录阿里云（子账号默认无 BSS 权限）
+#   2. https://ram.console.aliyun.com 创建 RAM 用户 · 只授 AliyunBSSReadOnlyAccess
+#   3. 生成 AccessKey 写入环境变量 BSS_ACCESS_KEY / BSS_SECRET_KEY
+# 不填则对账任务自动跳过（不影响主流程）
+bss:
+  enabled:     ${BSS_ENABLED:false}                              # true 才启用定时对账
+  access-key:  ${BSS_ACCESS_KEY:}                                # 主账号下的 RAM AK
+  secret-key:  ${BSS_SECRET_KEY:}
+  region:      ${BSS_REGION:cn-hangzhou}                         # BSS 接口固定走杭州
+  product-codes: ${BSS_PRODUCT_CODES:dashscope}                  # 逗号分隔 · 需要对账的产品
+  alert-threshold-pct: ${BSS_ALERT_THRESHOLD:0.10}               # 差异超此比例触发告警（0.10 = 10%）
+  reconcile-cron: ${BSS_RECONCILE_CRON:0 30 3 * * ?}             # 默认每天 3:30 · 阿里 T+1 出账
+
+# 本地文件上传配置（头像等文件直接存磁盘，不走 MinIO）
+upload:
+  path: uploads
+
+# 语音播报情绪 · 任务·语音情绪
+# emotion-enabled 默认 false：cosyvoice-v2 的情绪参数支持需用真实 Key 验证后再开启，
+# 开启后会把 VoicePersona.emotion / 请求级 emotion 注入 DashScope 合成请求。
+# 可用环境变量 TTS_EMOTION_ENABLED 覆盖（生产经 .env.prod + docker-compose 透传）。
+tts:
+  emotion-enabled: ${TTS_EMOTION_ENABLED:false}
+  # TTS 合成端点（CosyVoice WebSocket，专有协议）· 离线指向兼容网关或关闭
+  ws-url: ${TTS_WS_URL:wss://dashscope.aliyuncs.com/api-ws/v1/inference/}
+
+# Office 文档转换（WPS/老格式经 LibreOffice 转换为现代 OOXML）
+# 部署前置: brew install libreoffice / apt-get install libreoffice
+# 验证: soffice --version
+office:
+  soffice-path: soffice          # Mac 可设 /Applications/LibreOffice.app/Contents/MacOS/soffice
+  convert-timeout: 120
+
+# 视觉识别（OCR + 图片描述），用 VL 模型；OpenAI 兼容 /v1/chat/completions
+# 离线：VISION_BASE_URL 指向本地 VL 服务（vLLM 跑 Qwen2.5-VL 等），VISION_MODEL 改本地模型名
+vision:
+  base-url: ${VISION_BASE_URL:}  # 空=回退 llm.base-url（与对话同源）
+  api-key: ${VISION_API_KEY:}    # 空=回退 llm.api-key
+  model: ${VISION_MODEL:qwen-vl-max}   # 备选: qwen-vl-plus 便宜版
+  max-tokens: 2000
+  timeout-seconds: 60
+
+# 文档 OCR 独立于通用图片理解；端点/Key 为空时回退 vision.*，默认使用千问 3.5 OCR。
+ocr:
+  base-url: ${OCR_BASE_URL:}
+  api-key: ${OCR_API_KEY:}
+  model: ${OCR_MODEL:qwen3.5-ocr}
+  max-tokens: ${OCR_MAX_TOKENS:8000}
+
+# 音频识别（ASR）。protocol=dashscope（云端专有异步，需公网 URL）/ openai（本地 Whisper·FunASR 兼容）
+# 离线：ASR_PROTOCOL=openai + ASR_BASE_URL 指向本地 faster-whisper-server（后端下载音频再上传，无需公网）
+asr:
+  protocol: ${ASR_PROTOCOL:dashscope}              # dashscope | openai
+  base-url: ${ASR_BASE_URL:http://localhost:8000}  # openai 协议下的本地 ASR 服务
+  api-key: ${ASR_API_KEY:}                         # 空=回退 llm.api-key
+  model: ${ASR_MODEL:paraformer-v2}                # openai 协议改成本地模型名，如 Systran/faster-whisper-large-v3
+  poll-interval-ms: 3000                          # 轮询间隔（dashscope 用）
+  max-poll-times: ${ASR_MAX_POLL_TIMES:600}       # 600 × 3s = 30 分钟超时（长音频/1300MB 用，原 200=10min 易超时）
+  enable-diarization: true       # 说话人分离（dashscope 用）
+
+# 视频处理（FFmpeg 抽音轨 + 关键帧 → 走 ASR + VL）
+# 部署前置: brew install ffmpeg / apt-get install ffmpeg
+# 验证: ffmpeg -version
+video:
+  ffmpeg-path: ffmpeg            # Mac 可改 /opt/homebrew/bin/ffmpeg
+  ffprobe-path: ffprobe
+  keyframe-interval: 30          # 每 30 秒抽 1 帧
+  keyframe-max-count: 200        # 单视频最多 200 帧（避免超长视频爆炸）
+  ocr-min-text-length: 4         # 帧 OCR 出来的文字少于此长度只保留描述
+  audio-format: mp3              # 抽音轨编码格式
+  ffmpeg-timeout-seconds: ${FFMPEG_TIMEOUT_SECONDS:1800}    # 单次 FFmpeg 最长 30 分钟（超大视频抽流慢，原 600=10min 易超时）
+  # 任务 1.8 v3 · Qwen-VL 视频原生理解（替代旧 ASR+VL 双管线）
+  understanding:
+    mode: qwen-vl                # qwen-vl(推荐) / legacy(旧 ASR+VL · 仅用于回退兜底)
+    base-url: ${VIDEO_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}  # 离线指向本地 VL（需支持 video_url）
+    api-key: ${VIDEO_API_KEY:}   # 空=回退 llm.api-key
+    model: ${VIDEO_MODEL:qwen3-vl-plus}  # 默认值，实际以「AI 配置 → 解析模型 → 视频理解模型」为准（可视化切换）
+    max-seconds-per-call: 60     # 单次 API 调用最长视频秒数，超过自动切片
+    timeout-seconds: 300         # 单次理解超时（视频越长越久）
+
+# Milvus 配置
+milvus:
+  host:            ${MILVUS_HOST:127.0.0.1}
+  port:            ${MILVUS_PORT:19530}
+  collection-name: ${MILVUS_COLLECTION:mindcrew_knowledge}
+  dimension:       ${MILVUS_DIMENSION:1024}
+
+# JWT 配置
+jwt:
+  secret: ${JWT_SECRET:MindCrew2026SecretKeyForJWTTokenGenerationPleaseChangeInProduction}
+  expiration: 86400000              # 24小时 (毫秒)
+  refresh-expiration: 604800000     # 7天 (毫秒)
+  inactive-timeout: ${JWT_INACTIVE_TIMEOUT:3600}   # 闲置自动下线 (秒)，默认 1 小时无操作即失效
+
+# LLM 配置 (OpenAI 兼容接口格式)。默认 DashScope；离线把 LLM_BASE_URL 指向本地 vLLM/Ollama
+llm:
+  base-url: ${LLM_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+  api-key: ${BAILIAN_API_KEY:sk-local}  # 离线本地服务通常不校验，给个占位即可
+  model: ${LLM_CHAT_MODEL:qwen-plus}    # 可选: qwen-turbo / qwen-plus / qwen-max
+  embedding-model: ${EMBEDDING_MODEL:text-embedding-v3}   # 输出维度 1024，与 Milvus 一致
+  timeout: 60
+
+# 语音通话专用 LLM（智力更强；联网搜索与对话端共用百度 provider）
+voice:
+  chat-model: ${VOICE_CHAT_MODEL:qwen-max}   # 语音每轮回答模型，可选 qwen-plus(更快) / qwen-max(更强)
+  # 实时语音/ASR WebSocket 端点（专有协议）· 离线指向协议兼容的本地网关，或直接关闭语音功能
+  realtime:
+    ws-url: ${VOICE_REALTIME_WS_URL:wss://dashscope.aliyuncs.com/api-ws/v1/inference/}
+  # 声音克隆/TTS 定制端点（专有协议）
+  clone:
+    api-url: ${VOICE_CLONE_API_URL:https://dashscope.aliyuncs.com/api/v1/services/audio/tts/customization}
+
+# 重排序配置。protocol=dashscope（阿里云 qwen3-rerank / gte-rerank-v2）/ openai·jina·cohere（本地 bge-reranker via TEI/Xinference）
+# 离线：RERANKER_PROTOCOL=openai + RERANKER_API_URL 指向本地 rerank 服务
+reranker:
+  protocol: ${RERANKER_PROTOCOL:dashscope}   # dashscope | openai | jina | cohere
+  api-url: ${RERANKER_API_URL:https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank}
+  api-key: ${RERANKER_API_KEY:}              # 空=回退 llm.api-key
+  model: ${RERANKER_MODEL:qwen3-rerank}
+
+mindcrew:
+  web-search:
+    enabled: ${DOCMIND_WEB_SEARCH_ENABLED:true}
+    provider: ${WEB_SEARCH_PROVIDER:serper}   # 联网搜索源: serper(Google) / baidu(百度千帆AI搜索) / tavily
+    # Tavily（备用/回退）
+    tavily-endpoint: https://api.tavily.com/search
+    api-key: ${TAVILY_API_KEY:}   # ⚠ 务必用环境变量注入，不要写进代码仓库
+    # 百度千帆 AI 搜索
+    baidu-endpoint: https://qianfan.baidubce.com/v2/ai_search
+    baidu-api-key: ${BAIDU_SEARCH_API_KEY:}   # 千帆平台 API Key（Bearer）· 用环境变量注入
+    baidu-search-source: baidu_search_v2
+    # Google Serper（推荐：国内网络下可直连，免费 2500 次/月，结果接近 Google 真实 SERP）
+    serper-endpoint: https://google.serper.dev/search
+    serper-api-key: ${SERPER_API_KEY:}   # Serper.dev API Key（只能通过环境变量注入）
+    timeout: 30s
+  # 全球获客数字员工 (Global Lead Hunter) · Serper 复用上面 web-search 的配置
+  lead-hunter:
+    hunter-api-key: ${HUNTER_API_KEY:}   # Hunter.io Key（可选；未配置时联系人降级为网页邮箱抽取）
+    max-target-count: 200                # 单次任务目标线索上限
+    max-serper-calls: 120                # 单次任务 Serper 调用上限（保护 2500/月免费额度）
+    serper-interval-ms: 400              # Serper 调用间隔
+    max-enrichment-calls: 40             # 公司补全阶段的搜索上限
+    task-concurrency: ${LEAD_HUNT_CONCURRENCY:4}        # 同时执行的获客任务数
+    task-queue-capacity: ${LEAD_HUNT_QUEUE_CAPACITY:20} # 有界等待队列，满后立即提示繁忙
+    llm-concurrency: ${LEAD_HUNT_LLM_CONCURRENCY:4}     # 获客专用 LLM 线程数
+    llm-queue-capacity: ${LEAD_HUNT_LLM_QUEUE_CAPACITY:16}
+
+# 日志配置
+logging:
+  level:
+    com.simon.MindCrew: DEBUG
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 钉钉机器人接入：已改为「数据库 + 后台管理页」多实例配置（见 DingtalkBot* + 菜单「钉钉机器人」），
+# 不再用 .env 配置。每个机器人有专属回调地址 /api/dingtalk/callback/{token}。

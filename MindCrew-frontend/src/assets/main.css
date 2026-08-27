@@ -1,0 +1,1721 @@
+/* =====================================================================
+   MindCrew - Editorial Enterprise (Light)
+   --------------------------------------------------------------------
+   A refined paper-like aesthetic. Indigo accents, layered tinted shadows,
+   editorial display type, restrained motion. Built to read like a serious
+   product, not a template.
+   ===================================================================== */
+
+/* ─────────────────────────────────────────────
+   Document
+   ───────────────────────────────────────────── */
+html {
+  /* Reserve scrollbar space so its appearance never jolts layout */
+  scrollbar-gutter: stable;
+  overflow: hidden;            /* let inner panes scroll, not html */
+}
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-page);
+  color: var(--ink-1);
+  font-family: 'Plus Jakarta Sans', 'Noto Sans SC', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-feature-settings: 'kern';
+  letter-spacing: -0.003em;
+  line-height: 1.55;
+  overflow: hidden;            /* prevents the body from scrolling itself */
+}
+
+h1, h2, h3, h4, .display {
+  font-family: 'Manrope', 'Noto Sans SC', 'PingFang SC', sans-serif;
+  letter-spacing: -0.018em;
+  font-weight: 700;
+  color: var(--ink-1);
+}
+
+.mono { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-feature-settings: 'zero', 'ss01'; }
+
+/* Atmospheric page backdrop on a separate fixed layer (light breathing design) */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 8%,  rgba(255, 215, 228, 0.55), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 88% 15%, rgba(197, 219, 255, 0.50), transparent 60%),
+    radial-gradient(ellipse 65% 55% at 72% 70%, rgba(221, 208, 255, 0.45), transparent 62%),
+    radial-gradient(ellipse 55% 45% at 18% 80%, rgba(212, 244, 224, 0.42), transparent 60%),
+    radial-gradient(ellipse 100% 80% at 50% 110%, rgba(245, 245, 247, 0.9), transparent 70%),
+    linear-gradient(180deg, #F7F7F9 0%, #F5F5F7 55%, #F2F2F4 100%);
+}
+#app { position: relative; z-index: 1; }
+
+/* Scrollbar - 明显可见（thumb 更粗更深 + 浅色轨道槽） */
+::-webkit-scrollbar { width: 14px; height: 14px; }
+::-webkit-scrollbar-track { background: rgba(100,116,139,0.12); border-radius: 10px; }
+::-webkit-scrollbar-thumb {
+  background: rgba(100,116,139,0.6);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  min-height: 40px;
+  transition: background 200ms ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100,116,139,0.85);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+::selection { background: var(--brand-soft-2); color: var(--brand-ink); }
+
+/* ─────────────────────────────────────────────
+   Design tokens
+   ───────────────────────────────────────────── */
+:root {
+  /* Brand - Apple Blue Accent (light breathing design system) */
+  --brand:          #0071E3;
+  --brand-hover:    #0A84FF;
+  --brand-active:   #0062C4;
+  --brand-ink:      #0062C4;
+  --brand-soft:     #E8F1FF;
+  --brand-soft-2:   #D6E8FF;
+  --brand-glow:     rgba(0, 113, 227, 0.14);
+
+  /* Accent - unified Apple blue */
+  --accent:         #0071E3;
+  --accent-soft:    #E8F1FF;
+
+  /* Surfaces & ink */
+  --bg-page:        #F5F5F7;
+  --bg-surface:     #FFFFFF;
+  --bg-elevated:    #FFFFFF;
+  --bg-subtle:      #F2F2F7;
+  --bg-hover:       #F2F2F7;
+
+  --ink-1:          #1D1D1F;   /* headings, near-black */
+  --ink-2:          #4B4B53;   /* body */
+  --ink-3:          #6E6E73;   /* muted */
+  --ink-4:          #86868B;   /* placeholder */
+  --ink-5:          #AEAEB2;   /* disabled */
+
+  --line:           #E8E8ED;
+  --line-strong:    #DEDEE3;
+  --line-soft:      #F0F0F2;
+
+  /* Semantic */
+  --success:        #34C759;
+  --success-ink:    #248A3D;
+  --success-soft:   #E8F8ED;
+  --warning:        #FF9F0A;
+  --warning-ink:    #B85F00;
+  --warning-soft:   #FFF4E0;
+  --danger:         #FF3B30;
+  --danger-ink:     #D70015;
+  --danger-soft:    #FFEBEA;
+  --info:           #0071E3;
+  --info-ink:       #0062C4;
+  --info-soft:      #E8F1FF;
+
+  /* User-avatar warmth (the orange/coral feel from reference) */
+  --avatar-warm-1:  #FF8A65;
+  --avatar-warm-2:  #F43F5E;
+
+  /* Layout */
+  --sidebar-bg:     #FFFFFF;
+  --sidebar-width:  240px;
+  --header-height:  64px;
+
+  /* Radius */
+  --radius-xs:      6px;
+  --radius-sm:      10px;
+  --radius:         14px;
+  --radius-lg:      18px;
+  --radius-xl:      22px;
+  --radius-pill:    999px;
+
+  /* Shadows - soft neutral (Apple-like) */
+  --shadow-xs:      0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm:      0 2px 6px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md:      0 6px 18px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg:      0 18px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --shadow-xl:      0 28px 72px rgba(0, 0, 0, 0.10), 0 8px 22px rgba(0, 0, 0, 0.05);
+  --shadow-brand:   0 8px 24px rgba(0, 113, 227, 0.28), 0 2px 6px rgba(0, 113, 227, 0.14);
+  --shadow-card:    0 1px 0 var(--line-soft), 0 4px 14px rgba(0, 0, 0, 0.035);
+
+  /* Motion */
+  --ease:           cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce:    cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition:     all 200ms var(--ease);
+
+  /* ── Legacy aliases (so existing components still compile) ── */
+  --primary:        var(--brand);
+  --primary-dim:    var(--brand-soft);
+  --primary-glow:   var(--brand-glow);
+  --bg-base:        var(--bg-page);
+  --border:         var(--line);
+  --border-bright:  var(--brand);
+  --muted:          var(--ink-3);
+  --shadow:         var(--shadow-md);
+
+  /* ── Element Plus token mapping ── */
+  --el-color-primary:                 var(--brand);
+  --el-color-primary-light-3:         #5CA8FF;
+  --el-color-primary-light-5:         #9CC7FF;
+  --el-color-primary-light-7:         #C7E0FF;
+  --el-color-primary-light-9:         var(--brand-soft);
+  --el-color-primary-dark-2:          var(--brand-active);
+
+  --el-bg-color:                      var(--bg-surface);
+  --el-bg-color-page:                 var(--bg-page);
+  --el-bg-color-overlay:              var(--bg-surface);
+
+  --el-text-color-primary:            var(--ink-1);
+  --el-text-color-regular:            var(--ink-2);
+  --el-text-color-secondary:          var(--ink-3);
+  --el-text-color-placeholder:        var(--ink-4);
+  --el-text-color-disabled:           var(--ink-4);
+
+  --el-border-color:                  var(--line);
+  --el-border-color-light:            var(--line-soft);
+  --el-border-color-lighter:          var(--line-soft);
+  --el-border-color-extra-light:      var(--line-soft);
+
+  --el-fill-color-blank:              var(--bg-surface);
+  --el-fill-color-light:              var(--bg-subtle);
+  --el-fill-color:                    var(--bg-subtle);
+}
+
+/* ─────────────────────────────────────────────
+   Element Plus - Light overrides
+   ───────────────────────────────────────────── */
+.el-card {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+.el-card__header {
+  border-bottom: 1px solid var(--line-soft) !important;
+  padding: 16px 20px !important;
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+.el-button {
+  border-radius: var(--radius-sm) !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  transition: var(--transition) !important;
+  height: 36px;
+  padding: 0 18px;
+}
+.el-button--primary {
+  background: linear-gradient(180deg, var(--brand-hover), var(--brand)) !important;
+  border-color: var(--brand) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  box-shadow: var(--shadow-brand) !important;
+}
+.el-button--primary:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32), 0 2px 6px rgba(0, 0, 0, 0.16) !important;
+}
+.el-button--primary:active {
+  filter: brightness(0.95);
+}
+.el-button--default,
+.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info):not(.el-button--text) {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--ink-2) !important;
+  box-shadow: var(--shadow-xs) !important;
+}
+.el-button--default:hover,
+.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info):not(.el-button--text):hover {
+  border-color: var(--brand) !important;
+  color: var(--brand) !important;
+  background: var(--brand-soft) !important;
+  box-shadow: 0 0 0 4px var(--brand-glow), var(--shadow-xs) !important;
+}
+.el-button.is-circle {
+  padding: 9px !important;
+  width: 36px;
+  height: 36px;
+  border-radius: 50% !important;
+}
+.el-button--danger {
+  background: linear-gradient(180deg, #FF6B6B, var(--danger)) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════
+ * 全局表单组件统一样式 · 任务 7 收尾修复
+ *   - 用 border 而非 box-shadow，避免相邻字段间的"穿心横线"
+ *   - placeholder 颜色加深确保可读
+ *   - hover / focus 三态明显
+ *   - 覆盖 input / textarea / select / inputnumber / autocomplete
+ * ═══════════════════════════════════════════════════════ */
+.el-input__wrapper {
+  background: var(--bg-surface) !important;
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: none !important;
+  padding: 0 12px !important;
+  min-height: 36px;
+  transition: var(--transition) !important;
+}
+.el-input__wrapper:hover {
+  border-color: var(--line-strong) !important;
+  box-shadow: none !important;
+}
+.el-input__wrapper.is-focus {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 3px var(--brand-glow) !important;
+}
+.el-input.is-disabled .el-input__wrapper {
+  background: var(--bg-subtle) !important;
+  border-color: var(--line-soft) !important;
+}
+.el-input__inner {
+  color: var(--ink-1) !important;
+  text-decoration: none !important;   /* 防继承 line-through/underline */
+}
+.el-input__inner::placeholder,
+.el-textarea__inner::placeholder,
+.el-input__inner::-webkit-input-placeholder,
+.el-textarea__inner::-webkit-input-placeholder {
+  color: var(--ink-4) !important;
+  opacity: 1 !important;
+  font-weight: 400 !important;
+  text-decoration: none !important;    /* 防止某些主题给 placeholder 加 underline */
+  -webkit-text-decoration: none !important;
+}
+/* ═══════════════════════════════════════════════
+ * el-select 横线 bug 修复 · 任务 7 收尾
+ *
+ * 现象：el-select 输入框文字中间出现一条水平线
+ * 根因：Element Plus 内部 el-select 在 readonly input 上某些主题/继承样式
+ *      会渲染 text-decoration: line-through
+ * 修复：对 el-select 内部所有元素强制 text-decoration: none
+ *      + 用更具体的选择器加 !important 提高优先级
+ * ═══════════════════════════════════════════════ */
+.el-select,
+.el-select *,
+.el-select__placeholder,
+.el-select__placeholder *,
+.el-select .el-input,
+.el-select .el-input__wrapper,
+.el-select .el-input__inner,
+.el-select .el-input__inner::placeholder,
+.el-select__selected-item,
+.el-select__tags-text,
+.el-select-v2,
+.el-select-v2 *,
+.el-select-v2__placeholder,
+.el-select-v2__placeholder *,
+.el-select-v2 .el-select-v2__input,
+.el-select-v2__input-wrapper,
+.el-select-v2__suffix {
+  text-decoration: none !important;
+  -webkit-text-decoration: none !important;
+  text-decoration-line: none !important;
+  text-decoration-style: none !important;
+}
+.el-select__placeholder,
+.el-select-v2__placeholder {
+  color: var(--ink-4) !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.el-select .el-input__inner {
+  color: var(--ink-1) !important;
+}
+/* el-select 内部 input 是 readonly · 防 browser default 给加划线 */
+.el-select .el-input__inner[readonly],
+.el-select .el-input__inner[readonly]::placeholder {
+  text-decoration: none !important;
+  -webkit-text-decoration: none !important;
+  background-image: none !important;          /* 防被 background 渐变伪造横线 */
+  border-top: none !important;
+  border-bottom: none !important;
+}
+/* el-input__wrapper 强制不透明背景，挡住任何下层水印/底纹 */
+.el-input__wrapper,
+.el-textarea__inner {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  background: var(--bg-surface) !important;
+}
+
+/* ═══════════════════════════════════════════════
+ * 「下拉框 placeholder 文字有横线」终极修复
+ * 把所有可能渲染出横线的样式来源全清除：
+ *   - text-decoration（line-through / underline / overline）
+ *   - 伪元素 ::before / ::after 横线
+ *   - background linear-gradient 伪造的横线
+ *   - 内部 hr 元素
+ *   - border-top / border-bottom 重叠
+ *   - chrome readonly input 的 default appearance 横线
+ * ═══════════════════════════════════════════════ */
+.el-input *,
+.el-select *,
+.el-select-v2 *,
+.el-input__inner,
+.el-input__inner::placeholder,
+.el-select__placeholder,
+.el-select-v2__placeholder,
+.el-select__selected-item,
+.el-select__tags-text,
+.el-input__wrapper > *,
+.el-input__wrapper input,
+.el-input__wrapper input::placeholder {
+  text-decoration: none !important;
+  text-decoration-line: none !important;
+  text-decoration-style: none !important;
+  text-decoration-color: transparent !important;
+  -webkit-text-decoration: none !important;
+  -webkit-text-decoration-line: none !important;
+  background-image: none !important;
+}
+.el-input__inner::before, .el-input__inner::after,
+.el-select__placeholder::before, .el-select__placeholder::after,
+.el-select-v2__placeholder::before, .el-select-v2__placeholder::after,
+.el-select__selected-item::before, .el-select__selected-item::after {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+}
+.el-input__wrapper hr,
+.el-select hr,
+.el-select-v2 hr {
+  display: none !important;
+}
+/* readonly input 的 default appearance（某些 browser 给 readonly 加灰色横线） */
+.el-input__inner[readonly] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* size=large 高度统一 44px */
+.el-input--large .el-input__wrapper { min-height: 44px; }
+.el-input--small .el-input__wrapper { min-height: 30px; }
+
+.el-textarea__inner {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--ink-1) !important;
+  resize: none;
+  padding: 8px 12px !important;
+  transition: var(--transition) !important;
+}
+.el-textarea__inner:hover { border-color: var(--line-strong) !important; }
+.el-textarea__inner:focus {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 3px var(--brand-glow) !important;
+}
+
+/* el-select · 复用 el-input__wrapper 样式（select 内部用同一容器）
+ * 关键修复：默认 select 显示"穿心横线"是因为内部下拉箭头 + suffix 边线对齐线产生
+ */
+.el-select .el-input__wrapper { padding-right: 8px !important; }
+.el-select__placeholder { color: var(--ink-4) !important; }
+.el-select__input { color: var(--ink-1) !important; }
+.el-select .el-input.is-focus .el-input__wrapper {
+  border-color: var(--brand) !important;
+}
+
+/* el-select-v2 / popper 下拉项 */
+.el-select-dropdown__item.selected { color: var(--brand) !important; font-weight: 600; }
+.el-select-dropdown__item.hover,
+.el-select-dropdown__item:hover { background: var(--brand-soft) !important; }
+
+/* el-input-number · 去掉它内部的多余 border */
+.el-input-number .el-input__wrapper { padding: 0 !important; }
+.el-input-number__decrease,
+.el-input-number__increase {
+  background: var(--bg-subtle) !important;
+  border-color: var(--line) !important;
+  color: var(--ink-2) !important;
+}
+
+/* form-item 之间间距加大 · 避免相邻字段边框视觉粘连 */
+.el-form-item { margin-bottom: 20px !important; }
+.el-form-item__label {
+  color: var(--ink-2) !important;
+  font-weight: 500;
+}
+
+/* form-item error 提示颜色加强对比 */
+.el-form-item__error { color: var(--danger) !important; font-weight: 500; }
+
+/* radio / checkbox 选中态 */
+.el-radio__input.is-checked .el-radio__inner,
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+}
+.el-radio__input.is-checked + .el-radio__label,
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: var(--brand) !important;
+}
+
+/* ── 分段选择器（今日/近7天/近30天 一类）：软轨道 + 浮起选中态 ── */
+.el-radio-group:has(.el-radio-button) {
+  background: var(--bg-subtle);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  align-items: center;
+}
+.el-radio-button__inner {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--ink-3) !important;
+  font-weight: 500;
+  border-radius: 7px !important;
+  padding: 6px 15px !important;
+  transition: color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.el-radio-button:hover .el-radio-button__inner { color: var(--ink-1) !important; }
+.el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: var(--bg-surface) !important;
+  color: var(--brand) !important;
+  box-shadow: 0 1px 2px rgba(11, 20, 38, 0.10) !important;
+}
+
+/* el-tag 默认色调（避免淡到看不出） */
+.el-tag {
+  border-color: var(--line) !important;
+}
+.el-tag--info {
+  background: var(--bg-subtle) !important;
+  color: var(--ink-2) !important;
+}
+
+.el-dialog {
+  background: var(--bg-surface) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-xl) !important;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.el-dialog__header { padding: 20px 24px; border-bottom: 1px solid var(--line-soft); margin: 0; }
+.el-dialog__title  { color: var(--ink-1) !important; font-family: 'Manrope', sans-serif; font-weight: 700 !important; font-size: 17px !important; }
+.el-dialog__body   { color: var(--ink-2) !important; padding: 24px !important; }
+.el-dialog__footer { padding: 16px 24px; border-top: 1px solid var(--line-soft); }
+
+.el-table {
+  background: transparent !important;
+  --el-table-bg-color: var(--bg-surface);
+  --el-table-tr-bg-color: var(--bg-surface);
+  --el-table-header-bg-color: var(--bg-subtle);
+  --el-table-row-hover-bg-color: var(--brand-soft);
+  --el-table-border-color: var(--line-soft);
+  --el-table-text-color: var(--ink-2);
+  --el-table-header-text-color: var(--ink-3);
+}
+.el-table th { font-weight: 600 !important; font-size: 12px !important; text-transform: uppercase; letter-spacing: 0.04em; }
+.el-table td { font-size: 13.5px !important; }
+
+.el-select-dropdown,
+.el-dropdown-menu,
+.el-popover {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 6px !important;
+}
+.el-select-dropdown__item,
+.el-dropdown-menu__item {
+  color: var(--ink-2) !important;
+  border-radius: var(--radius-xs) !important;
+  font-size: 13px !important;
+}
+.el-select-dropdown__item.hover,
+.el-select-dropdown__item:hover,
+.el-dropdown-menu__item:hover,
+.el-dropdown-menu__item:not(.is-disabled):focus {
+  background: var(--bg-hover) !important;
+  color: var(--brand) !important;
+}
+.el-select-dropdown__item.selected {
+  background: var(--brand-soft) !important;
+  color: var(--brand-ink) !important;
+  font-weight: 600 !important;
+}
+
+.el-pagination {
+  --el-pagination-bg-color: transparent;
+  --el-pagination-button-bg-color: var(--bg-subtle);
+  --el-pagination-button-color: var(--ink-3);
+  --el-pagination-hover-color: var(--brand);
+}
+.el-pager li {
+  background: var(--bg-subtle) !important;
+  color: var(--ink-2) !important;
+  border-radius: var(--radius-xs) !important;
+  margin: 0 2px;
+}
+.el-pager li.is-active {
+  background: var(--brand) !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.el-tag {
+  border-radius: var(--radius-xs) !important;
+  font-weight: 500 !important;
+  border: 1px solid transparent !important;
+  height: 22px !important;
+  line-height: 20px !important;
+  padding: 0 8px !important;
+  font-size: 11.5px !important;
+}
+.el-tag--success { background: var(--success-soft) !important; color: var(--success-ink) !important; }
+.el-tag--warning { background: var(--warning-soft) !important; color: var(--warning-ink) !important; }
+.el-tag--danger  { background: var(--danger-soft)  !important; color: var(--danger-ink)  !important; }
+.el-tag--info    { background: var(--info-soft)    !important; color: var(--info-ink)    !important; }
+
+.el-form-item__label { color: var(--ink-2) !important; font-weight: 500 !important; }
+.el-form-item.is-error .el-input__wrapper { box-shadow: 0 0 0 1px var(--danger) !important; }
+
+.el-loading-mask { background: rgba(246, 248, 251, 0.72) !important; backdrop-filter: blur(4px); }
+.el-loading-spinner .path { stroke: var(--brand) !important; }
+.el-loading-spinner .el-loading-text { color: var(--brand) !important; }
+
+.el-message {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-lg) !important;
+  min-width: 320px;
+}
+.el-message--success .el-message__icon { color: var(--success) !important; }
+.el-message--error   .el-message__icon { color: var(--danger)  !important; }
+.el-message--warning .el-message__icon { color: var(--warning) !important; }
+
+.el-message-box {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-xl) !important;
+}
+.el-message-box__title { color: var(--ink-1) !important; font-family: 'Manrope', sans-serif; font-weight: 700 !important; }
+.el-message-box__content { color: var(--ink-2) !important; }
+
+.el-tooltip__popper {
+  background: var(--ink-1) !important;
+  color: #fff !important;
+  border-radius: var(--radius-xs) !important;
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+  box-shadow: var(--shadow-md) !important;
+}
+.el-tooltip__popper .el-popper__arrow::before { background: var(--ink-1) !important; }
+
+.el-switch.is-checked .el-switch__core { background-color: var(--brand) !important; border-color: var(--brand) !important; }
+
+.el-avatar {
+  background: linear-gradient(135deg, var(--avatar-warm-1), var(--avatar-warm-2)) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(11, 20, 38, 0.08);
+}
+
+.el-divider { border-color: var(--line) !important; }
+.el-divider__text { background: var(--bg-page) !important; color: var(--ink-3) !important; font-size: 12px; }
+
+.el-checkbox__inner {
+  border-color: var(--line-strong) !important;
+  border-radius: 4px !important;
+}
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background: var(--brand) !important;
+  border-color: var(--brand) !important;
+}
+.el-checkbox__label { color: var(--ink-2) !important; }
+
+.el-radio__inner { border-color: var(--line-strong) !important; }
+.el-radio__input.is-checked .el-radio__inner {
+  background: var(--brand) !important;
+  border-color: var(--brand) !important;
+}
+
+/* ─────────────────────────────────────────────
+   Animations
+   ───────────────────────────────────────────── */
+.fade-enter-active, .fade-leave-active { transition: opacity 180ms ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* Route transition - pure cross-fade, no translate (was causing layout shift) */
+.slide-up-enter-active { transition: opacity 200ms ease; }
+.slide-up-leave-active { transition: opacity 120ms ease; }
+.slide-up-enter-from   { opacity: 0; }
+.slide-up-leave-to     { opacity: 0; }
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.85); }
+}
+
+@keyframes shimmer-brand {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ─────────────────────────────────────────────
+   Utilities
+   ───────────────────────────────────────────── */
+.page-container { padding: 28px; height: 100%; overflow-y: auto; }
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--brand), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.card-surface {
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+/* ─────────────────────────────────────────────
+   Legacy component class overrides
+   These map dark-mode hardcoded styles inside .vue files
+   to the new light theme without touching component code.
+   ───────────────────────────────────────────── */
+
+/* Chat - message & conversation list */
+.welcome-title {
+  color: var(--ink-1) !important;
+  font-family: 'Manrope', 'Noto Sans SC', sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+}
+.welcome-desc { color: var(--ink-3) !important; }
+
+.conv-title { color: var(--ink-1) !important; font-weight: 500 !important; }
+.conv-item.active .conv-title { color: var(--brand) !important; font-weight: 600 !important; }
+.conv-item { color: var(--ink-2) !important; transition: var(--transition) !important; }
+.conv-item:hover { background: var(--bg-hover) !important; }
+.conv-item.active {
+  background: var(--brand-soft) !important;
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.conv-meta { color: var(--ink-3) !important; font-size: 11px !important; }
+.conv-icon { color: var(--ink-3) !important; }
+.empty-conv p { color: var(--ink-3) !important; }
+.empty-conv { color: var(--ink-3) !important; }
+
+.new-chat-btn {
+  background: linear-gradient(180deg, var(--brand-hover), var(--brand)) !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  box-shadow: var(--shadow-brand) !important;
+  border-radius: var(--radius-sm) !important;
+}
+.new-chat-btn:hover { filter: brightness(1.06); }
+
+.conv-btn { color: var(--ink-4) !important; }
+.conv-btn:hover { color: var(--danger) !important; background: var(--danger-soft) !important; }
+
+/* Assistant avatar (sparkle container) */
+.assistant-av {
+  background: linear-gradient(135deg, var(--brand-soft), var(--accent-soft)) !important;
+  color: var(--brand) !important;
+  border: 1px solid var(--brand-soft-2) !important;
+  box-shadow: var(--shadow-xs);
+}
+.user-av {
+  background: linear-gradient(135deg, var(--avatar-warm-1), var(--avatar-warm-2)) !important;
+  color: #fff !important;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.22);
+}
+
+/* Message bubbles */
+.user-msg-bubble,
+.msg-content.user,
+.bubble.user {
+  background: linear-gradient(180deg, var(--brand-hover), var(--brand)) !important;
+  color: #fff !important;
+  box-shadow: var(--shadow-brand) !important;
+  border-radius: var(--radius) var(--radius-xs) var(--radius) var(--radius) !important;
+}
+.assistant-msg-bubble,
+.msg-content.assistant,
+.bubble.assistant {
+  background: var(--bg-surface) !important;
+  color: var(--ink-1) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-radius: var(--radius-xs) var(--radius) var(--radius) var(--radius) !important;
+}
+
+/* Agent step badges */
+.step-badge          { font-weight: 600; border-radius: var(--radius-pill) !important; padding: 2px 8px; font-size: 11px; }
+.step-badge.intent   { background: var(--brand-soft) !important; color: var(--brand-ink) !important; }
+.step-badge.tool     { background: var(--info-soft) !important;  color: var(--info-ink) !important; }
+.step-badge.retrieve { background: var(--success-soft) !important; color: var(--success-ink) !important; }
+.step-badge.reflect  { background: var(--warning-soft) !important; color: var(--warning-ink) !important; }
+
+/* Auth pages - flip the dark stage to a paper one */
+.auth-page,
+.login-bg,
+.register-bg {
+  background:
+    radial-gradient(900px 600px at 80% 10%, rgba(0, 0, 0, 0.10), transparent 60%),
+    radial-gradient(700px 500px at 10% 100%, rgba(14, 165, 233, 0.08), transparent 60%),
+    var(--bg-page) !important;
+}
+.auth-card,
+.login-card,
+.register-card {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-xl) !important;
+  backdrop-filter: none !important;
+}
+.card-header h1,
+.card-header h2 {
+  color: var(--ink-1) !important;
+  font-family: 'Manrope', sans-serif;
+}
+.card-header p { color: var(--ink-3) !important; }
+.logo-text { color: var(--ink-1) !important; }
+
+/* ─────────────────────────────────────────────
+   Markdown body
+   ───────────────────────────────────────────── */
+.md-body { line-height: 1.75; color: var(--ink-1); font-size: 14.5px; }
+.md-body h1, .md-body h2, .md-body h3 {
+  color: var(--ink-1);
+  font-family: 'Manrope', 'Noto Sans SC', sans-serif;
+  font-weight: 700;
+  margin: 1.4em 0 0.5em;
+  letter-spacing: -0.012em;
+}
+.md-body h1 { font-size: 1.55em; }
+.md-body h2 { font-size: 1.28em; }
+.md-body h3 { font-size: 1.1em; }
+.md-body p  { margin: 0.7em 0; color: var(--ink-2); }
+.md-body ul, .md-body ol { padding-left: 1.5em; margin: 0.7em 0; color: var(--ink-2); }
+.md-body li { margin: 0.3em 0; }
+.md-body code {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-soft-2);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 0.86em;
+  color: var(--brand-ink);
+}
+.md-body pre {
+  background: linear-gradient(180deg, #0F1A33, #0B1426);
+  color: #E1E6EF;
+  border: 1px solid #1B2746;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  overflow-x: auto;
+  margin: 0.8em 0;
+  font-size: 13px;
+  line-height: 1.65;
+  box-shadow: var(--shadow-sm);
+}
+.md-body pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+.md-body blockquote {
+  border-left: 3px solid var(--brand);
+  padding: 10px 16px;
+  background: var(--brand-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin: 0.8em 0;
+  color: var(--ink-2);
+}
+.md-body table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
+.md-body th, .md-body td {
+  border: 1px solid var(--line) !important;
+  padding: 10px 14px;
+  text-align: left;
+}
+.md-body th { background: var(--bg-subtle); color: var(--ink-2); font-weight: 600; font-size: 12.5px; }
+.md-body a  {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid var(--brand-soft-2);
+  transition: var(--transition);
+}
+.md-body a:hover { border-bottom-color: var(--brand); }
+.md-body strong { color: var(--ink-1); font-weight: 700; }
+.md-body hr     { border: none; border-top: 1px solid var(--line); margin: 1.5em 0; }
+
+/* =====================================================================
+   Chat view - comprehensive override for scoped dark hardcoding
+   ===================================================================== */
+
+/* Sidebar (conversation list panel) */
+.chat-sidebar { background: var(--bg-surface) !important; border-right: 1px solid var(--line) !important; }
+.kb-selector  { background: var(--bg-subtle) !important; border-color: var(--line) !important; }
+.kb-label     { color: var(--ink-2) !important; font-weight: 600 !important; }
+.kb-optional  { color: var(--ink-3) !important; }
+.kb-hint      { color: var(--ink-3) !important; }
+
+.conv-icon  { color: var(--ink-3) !important; }
+.conv-meta  { color: var(--ink-3) !important; }
+.conv-title { color: var(--ink-1) !important; }
+.conv-item.active .conv-icon  { color: var(--brand) !important; }
+.conv-item.active .conv-title { color: var(--brand-ink) !important; }
+
+/* Welcome screen */
+.welcome-logo {
+  background: linear-gradient(135deg, var(--brand-hover), var(--brand) 55%, var(--brand-active)) !important;
+  box-shadow: var(--shadow-brand) !important;
+  border-radius: 18px !important;
+}
+.welcome-title { color: var(--ink-1) !important; }
+.welcome-desc  { color: var(--ink-3) !important; }
+.welcome-tips {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--ink-3) !important;
+  border-radius: var(--radius-pill) !important;
+}
+
+.quick-item {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--ink-1) !important;
+  box-shadow: var(--shadow-xs);
+  transition: var(--transition) !important;
+}
+.quick-item:hover {
+  border-color: var(--brand) !important;
+  background: var(--brand-soft) !important;
+  color: var(--brand-ink) !important;
+  box-shadow: var(--shadow-md);
+}
+.quick-icon { color: var(--brand) !important; }
+
+/* Messages area background */
+.messages-area { background: var(--bg-page) !important; }
+
+/* User bubble - indigo, premium */
+.user-bubble .bubble-text {
+  background: linear-gradient(180deg, var(--brand-hover), var(--brand)) !important;
+  color: #fff !important;
+  border-radius: var(--radius) var(--radius-xs) var(--radius) var(--radius) !important;
+  box-shadow: var(--shadow-brand) !important;
+  font-weight: 500;
+}
+
+/* AI avatar (sparkle container) */
+.ai-av {
+  background: linear-gradient(135deg, var(--brand-soft), var(--accent-soft)) !important;
+  border: 1px solid var(--brand-soft-2) !important;
+  color: var(--brand) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-xs);
+}
+
+/* AI bubble */
+.ai-bubble {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-xs) var(--radius) var(--radius) var(--radius) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+.bubble-content { color: var(--ink-1) !important; }
+
+/* Agent reasoning panel */
+.agent-steps {
+  background: var(--brand-soft) !important;
+  border: 1px solid var(--brand-soft-2) !important;
+  border-radius: var(--radius-sm) !important;
+}
+.steps-header  { color: var(--brand-ink) !important; font-weight: 600 !important; }
+.steps-header:hover { color: var(--brand) !important; }
+.toggle-icon   { color: var(--brand) !important; }
+.step-text     { color: var(--ink-2) !important; }
+
+.step-badge.intent    { background: rgba(0, 0, 0, 0.12) !important; color: var(--brand-ink) !important; }
+.step-badge.rewrite   { background: rgba(124, 140, 255, 0.14) !important; color: #4338CA !important; }
+.step-badge.retrieval { background: var(--success-soft) !important; color: var(--success-ink) !important; }
+.step-badge.rerank    { background: var(--warning-soft) !important; color: var(--warning-ink) !important; }
+
+/* Cursor blink */
+.cursor-blink {
+  display: inline-block;
+  width: 2px;
+  background: var(--brand);
+  animation: pulse-soft 1s infinite;
+}
+
+/* Sources panel */
+.sources-toggle {
+  color: var(--ink-2) !important;
+  background: var(--bg-subtle) !important;
+  border-radius: var(--radius-sm) !important;
+}
+.sources-toggle:hover {
+  background: var(--brand-soft) !important;
+  color: var(--brand) !important;
+}
+.source-card {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-xs);
+}
+.src-idx {
+  background: linear-gradient(180deg, var(--brand-hover), var(--brand)) !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  font-weight: 700;
+}
+.src-name    { color: var(--ink-1) !important; }
+.src-score   { color: var(--success-ink) !important; background: var(--success-soft); padding: 1px 6px; border-radius: 4px; }
+.src-excerpt { color: var(--ink-2) !important; }
+.src-meta    { color: var(--ink-3) !important; }
+
+/* Message action buttons */
+.action-btn {
+  color: var(--ink-3) !important;
+  border-radius: var(--radius-xs) !important;
+  transition: var(--transition);
+}
+.action-btn:hover { background: var(--bg-subtle) !important; color: var(--brand) !important; }
+.action-btn.active { color: var(--brand) !important; background: var(--brand-soft) !important; }
+.action-btn.danger { color: var(--ink-3) !important; }
+.action-btn.danger:hover { color: var(--danger) !important; background: var(--danger-soft) !important; }
+
+/* Input zone */
+.input-zone { background: var(--bg-page) !important; }
+.input-card {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-md) !important;
+  transition: var(--transition) !important;
+}
+.input-card:focus-within {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 4px var(--brand-glow), var(--shadow-md) !important;
+}
+.char-count        { color: var(--ink-4) !important; font-family: 'JetBrains Mono', monospace; }
+.char-count.warn   { color: var(--warning) !important; }
+.input-disclaimer  { color: var(--ink-3) !important; }
+
+.send-btn {
+  border-radius: var(--radius-sm) !important;
+  background: var(--bg-subtle) !important;
+  color: var(--ink-4) !important;
+  transition: var(--transition);
+}
+.send-btn.active {
+  background: linear-gradient(180deg, var(--brand-hover), var(--brand)) !important;
+  color: #fff !important;
+  box-shadow: var(--shadow-brand);
+}
+.send-btn.active:hover { filter: brightness(1.06); }
+
+.sending-dots span {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: currentColor; opacity: 0.6;
+  animation: pulse-soft 0.9s infinite;
+}
+
+/* Reasoning log (RL) - full-page agent trace */
+.rl-step-arrow     { color: var(--ink-4) !important; }
+.rl-block-title    { color: var(--ink-3) !important; }
+.rl-query-box      { background: var(--bg-surface) !important; border: 1px solid var(--line) !important; }
+.rl-query-box.improved { border-color: var(--brand) !important; background: var(--brand-soft) !important; }
+.rl-query-label    { color: var(--ink-3) !important; }
+.rl-query-text     { color: var(--ink-1) !important; }
+.rl-metric-lbl     { color: var(--ink-3) !important; }
+.rl-metric-val     { color: var(--brand) !important; }
+.rl-empty          { color: var(--ink-3) !important; }
+
+/* =====================================================================
+   Universal page-title / page-desc - flip all admin/management pages
+   (AI 配置中心, MCP 控制台, 数据大屏, 知识库, 用户管理, etc.)
+   ===================================================================== */
+.page-title,
+.view-title,
+.hero-title {
+  color: var(--ink-1) !important;
+  font-family: 'Manrope', 'Noto Sans SC', sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+.page-desc,
+.view-desc,
+.hero-desc {
+  color: var(--ink-3) !important;
+}
+.page-header { color: var(--ink-1); }
+.title-row { color: var(--ink-1); }
+
+/* Stat cards (knowledge / dashboard) */
+.stat-val   { color: var(--ink-1) !important; font-family: 'Manrope', sans-serif; font-weight: 800; }
+.stat-lbl   { color: var(--ink-3) !important; }
+.kb-title   { color: var(--ink-1) !important; font-weight: 600 !important; }
+.kb-desc    { color: var(--ink-3) !important; }
+.kb-time    { color: var(--ink-4) !important; }
+.meta-chunks { color: var(--ink-3) !important; }
+
+/* Knowledge upload drawer */
+.drop-text         { color: var(--ink-2) !important; }
+.drop-hint         { color: var(--ink-4) !important; }
+.file-selected-name { color: var(--ink-1) !important; }
+.file-selected-size { color: var(--ink-3) !important; }
+.file-clear        { color: var(--ink-4) !important; }
+.file-clear:hover  { color: var(--danger) !important; border-color: var(--danger) !important; }
+.progress-info     { color: var(--ink-3) !important; }
+.detail-key        { color: var(--ink-3) !important; }
+.detail-val        { color: var(--ink-1) !important; }
+
+/* Empty states */
+.empty-title { color: var(--ink-2) !important; font-weight: 600 !important; }
+.empty-desc  { color: var(--ink-3) !important; }
+
+/* Card overlay (hover actions on knowledge cards) */
+.overlay-btn       { color: var(--ink-2) !important; border-color: var(--line) !important; background: var(--bg-surface) !important; }
+.overlay-btn:hover { color: var(--brand) !important; border-color: var(--brand) !important; background: var(--brand-soft) !important; }
+.overlay-btn.danger:hover { color: var(--danger) !important; border-color: var(--danger) !important; background: var(--danger-soft) !important; }
+
+/* =====================================================================
+   el-select trigger - flip dark legacy override that was sticking out
+   ===================================================================== */
+/* 注意：边框/背景只加在外层 pill（.el-select__wrapper），
+ * 绝不能加到内层 .el-select__selection -- 它高度比 pill 矮且垂直居中，
+ * 套一圈 box-shadow 会让上下边在文字中部横穿，伪造出一条"横线"。 */
+.el-select__wrapper,
+.el-select .el-input__wrapper {
+  background: var(--bg-surface) !important;
+  box-shadow: 0 0 0 1px var(--line) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--ink-1) !important;
+}
+.el-select__selection {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  color: var(--ink-1) !important;
+}
+.el-select__wrapper:hover,
+.el-select .el-input__wrapper:hover { box-shadow: 0 0 0 1px var(--line-strong) !important; }
+.el-select__wrapper.is-focused,
+.el-select .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--brand), 0 0 0 4px var(--brand-glow) !important;
+}
+.el-select__placeholder,
+.el-select .el-input__inner::placeholder { color: var(--ink-4) !important; }
+.el-select__placeholder.is-transparent { color: var(--ink-4) !important; }
+.el-select-v2__placeholder { color: var(--ink-4) !important; }
+.el-select__caret { color: var(--ink-4) !important; }
+.el-select__tags-text { color: var(--ink-1) !important; }
+
+/* =====================================================================
+   Header user dropdown - refined popper, no jarring arrow
+   ===================================================================== */
+.el-popper.is-light {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  box-shadow:
+    0 18px 40px rgba(11, 20, 38, 0.10),
+    0 4px 12px rgba(11, 20, 38, 0.06) !important;
+  padding: 6px !important;
+  margin-top: 10px !important;
+}
+.el-popper.is-light .el-popper__arrow::before {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: none !important;
+}
+/* Dropdown item polish */
+.el-dropdown-menu {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.el-dropdown-menu__item {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px !important;
+  font-size: 13.5px !important;
+  color: var(--ink-2) !important;
+  border-radius: var(--radius-xs) !important;
+  margin: 2px 0;
+  transition: background 180ms var(--ease), color 180ms var(--ease) !important;
+}
+.el-dropdown-menu__item .el-icon {
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.el-dropdown-menu__item:hover,
+.el-dropdown-menu__item:focus {
+  background: var(--brand-soft) !important;
+  color: var(--brand-ink) !important;
+}
+.el-dropdown-menu__item:hover .el-icon,
+.el-dropdown-menu__item:focus .el-icon {
+  color: var(--brand) !important;
+}
+.el-dropdown-menu__item--divided {
+  border-top: 1px solid var(--line-soft) !important;
+  margin-top: 4px !important;
+  padding-top: 11px !important;
+}
+.el-dropdown-menu__item--divided::before {
+  display: none !important;
+}
+
+/* Login / Register fallback (auth pages use their own backgrounds) */
+.auth-bg, .login-page, .register-page {
+  background:
+    radial-gradient(900px 600px at 80% 10%, rgba(0, 0, 0, 0.12), transparent 60%),
+    radial-gradient(700px 500px at 10% 100%, rgba(14, 165, 233, 0.10), transparent 60%),
+    var(--bg-page) !important;
+}
+
+/* ============================================================
+   v4 极简 + 高级感（2026-08-13 · Impeccable skill 设计阶段1）
+   - 全局 :root 覆盖块（紫色 → ZYCOO 红、背景纯白、ink 暖中性灰）
+   - Element Plus 主题色 → ZYCOO 红
+   - 字体 → Inter（如系统无则降级 system-ui）
+   - 圆角统一 14px / 阴影克制 / 动效 150ms ease-out
+   ============================================================ */
+:root {
+  /* Brand - ZYCOO Red（取代紫色）· 唯一强色，克制使用 */
+  --brand:          #DC2626;
+  --brand-hover:    #B91C1C;
+  --brand-active:   #991B1B;
+  --brand-ink:      #7F1D1D;
+  --brand-soft:     #FEF2F2;
+  --brand-soft-2:   #FECACA;
+  --brand-glow:     rgba(220, 38, 38, 0.16);
+
+  /* Accent - Sky. AI 高亮（保留极淡使用） */
+  --accent:         #0EA5E9;
+  --accent-soft:    #E0F2FE;
+
+  /* Surfaces - 纯白背景（极致极简） */
+  --bg-page:        #FFFFFF;
+  --bg-surface:     #FFFFFF;
+  --bg-elevated:    #FFFFFF;
+  --bg-subtle:      #FAFAFA;
+  --bg-hover:       #F4F4F5;
+
+  /* Ink - 暖中性灰（高级感来源 · 不偏冷蓝） */
+  --ink-1:          #0A0A0A;
+  --ink-2:          #404040;
+  --ink-3:          #525252;
+  --ink-4:          #737373;
+  --ink-5:          #A3A3A3;
+
+  /* Lines - 中性灰（去蓝调） */
+  --line:           #E4E4E7;
+  --line-strong:    #D4D4D8;
+  --line-soft:      #F4F4F5;
+
+  /* Radius - 统一 14px（卡片）+ 8px 按钮 + 36px 输入框 */
+  --radius-xs:      6px;
+  --radius-sm:      8px;
+  --radius:         14px;
+  --radius-lg:      18px;
+  --radius-xl:      24px;
+  --radius-pill:    999px;
+
+  /* Shadows - 极克制（细线为主，少用阴影） */
+  --shadow-xs:      0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md:      0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-lg:      0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-xl:      0 16px 40px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.05);
+  --shadow-brand:   0 4px 12px rgba(220,38,38,0.18), 0 1px 3px rgba(220,38,38,0.10);
+  --shadow-card:    0 1px 0 var(--line-soft), 0 1px 3px rgba(0,0,0,0.03);
+
+  /* Motion - 更克制（150-250ms ease-out） */
+  --ease:           cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce:    cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition:     all 150ms var(--ease);
+}
+
+/* Element Plus 主题色 → ZYCOO 红（覆盖默认蓝紫） */
+:root {
+  --el-color-primary: #DC2626;
+  --el-color-primary-light-3: #E55454;
+  --el-color-primary-light-5: #EE8888;
+  --el-color-primary-light-7: #F4B8B8;
+  --el-color-primary-light-8: #F8CCCC;
+  --el-color-primary-light-9: #FCE0E0;
+  --el-color-primary-dark-2: #B91C1C;
+}
+
+/* 字体栈 - Inter / system-ui 优先（不引入外部，靠系统降级） */
+:root {
+  --el-font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--el-font-family);
+}
+body {
+  background: var(--bg-page) !important;
+  color: var(--ink-1);
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 卡片层级简化（去掉之前的紫色调底色） */
+.el-card { background: var(--bg-surface) !important; box-shadow: var(--shadow-card) !important; border-color: var(--line) !important; }
+.el-button--primary { background: var(--brand) !important; border-color: var(--brand) !important; }
+.el-button--primary:hover { background: var(--brand-hover) !important; border-color: var(--brand-hover) !important; }
+
+/* 顶部 header 背景 - 纯白 + 细线底边 */
+.app-header, .layout-header { background: var(--bg-surface) !important; border-bottom: 1px solid var(--line) !important; }
+
+/* 侧栏底色 - 纯白 + 细线右边 */
+.app-sidebar, .layout-sidebar { background: var(--bg-surface) !important; border-right: 1px solid var(--line) !important; }
+
+/* 链接默认 - ZYCOO 红 */
+a { color: var(--brand); text-decoration: none; }
+a:hover { color: var(--brand-hover); }
+
+/* ============================================================
+   v4.1 黑白灰高级感（2026-08-13 · 用户否决 ZYCOO 红/参考图，要 monochrome）
+   - 主色 → 纯黑（#0A0A0A），全灰阶层次
+   - 背景纯白 + 浅灰分段
+   - Element Plus 主题色 → 黑
+   ============================================================ */
+:root {
+  --brand:          #0A0A0A;
+  --brand-hover:    #2E2E2E;
+  --brand-active:   #17181c;
+  --brand-ink:      #111111;
+  --brand-soft:     #F4F4F5;
+  --brand-soft-2:   #E4E4E7;
+  --brand-glow:     rgba(0, 0, 0, 0.06);
+
+  --bg-page:        #FFFFFF;
+  --bg-surface:     #FFFFFF;
+  --bg-elevated:    #FFFFFF;
+  --bg-subtle:      #FAFAFA;
+  --bg-hover:       #F4F4F5;
+
+  --ink-1:          #0A0A0A;
+  --ink-2:          #3F3F46;
+  --ink-3:          #52525B;
+  --ink-4:          #71717A;
+  --ink-5:          #A1A1AA;
+
+  --line:           #E4E4E7;
+  --line-strong:    #D4D4D8;
+  --line-soft:      #F4F4F5;
+
+  --shadow-brand:   0 4px 12px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Element Plus 主题色 → 黑灰（覆盖默认蓝紫/红） */
+:root {
+  --el-color-primary: #0A0A0A;
+  --el-color-primary-light-3: #3F3F46;
+  --el-color-primary-light-5: #71717A;
+  --el-color-primary-light-7: #A1A1AA;
+  --el-color-primary-light-8: #D4D4D8;
+  --el-color-primary-light-9: #F4F4F5;
+  --el-color-primary-dark-2: #17181c;
+}
+
+/* 按钮/链接/关键元素 → 黑 */
+.el-button--primary { background: var(--brand) !important; border-color: var(--brand) !important; }
+.el-button--primary:hover { background: var(--brand-hover) !important; border-color: var(--brand-hover) !important; }
+a { color: var(--ink-2); text-decoration: none; }
+a:hover { color: var(--ink-1); }
+
+/* --primary 保底（原代码多处 var(--primary)，未定义时 fallback） */
+:root { --primary: #0A0A0A; }
+
+/* ============================================================
+   v5 Apple 官网式现代主义极简（2026-08-14）
+   - 冷灰背景 #F5F5F7、深炭黑文字 #1D1D1F、中灰 #86868B
+   - 细线 #D2D2D7 分割、微圆角 8-10px、无阴影（用细线代替）
+   - 大间距呼吸感、现代无衬线字体
+   ============================================================ */
+:root {
+  --brand:          #1D1D1F;
+  --brand-hover:    #424245;
+  --brand-active:   #17181c;
+  --brand-ink:      #1D1D1F;
+  --brand-soft:     #F5F5F7;
+  --brand-soft-2:   #E8E8ED;
+  --brand-glow:     rgba(29, 29, 31, 0.06);
+
+  --bg-page:        #F5F5F7;
+  --bg-surface:     #FFFFFF;
+  --bg-elevated:    #FFFFFF;
+  --bg-subtle:      #FBFBFD;
+  --bg-hover:       #F5F5F7;
+
+  --ink-1:          #1D1D1F;
+  --ink-2:          #1D1D1F;
+  --ink-3:          #424245;
+  --ink-4:          #6E6E73;
+  --ink-5:          #86868B;
+
+  --line:           #D2D2D7;
+  --line-strong:    #C7C7CC;
+  --line-soft:      #E5E5EA;
+
+  --radius-xs:      6px;
+  --radius-sm:      8px;
+  --radius:         10px;
+  --radius-lg:      12px;
+  --radius-xl:      16px;
+  --radius-pill:    999px;
+
+  --shadow-xs:      none;
+  --shadow-sm:      0 0.5px 0 #E5E5EA;
+  --shadow-md:      0 0.5px 0 #D2D2D7;
+  --shadow-lg:      0 1px 3px rgba(0,0,0,0.04), 0 0.5px 0 #E5E5EA;
+  --shadow-xl:      0 4px 16px rgba(0,0,0,0.06), 0 0.5px 0 #E5E5EA;
+  --shadow-brand:   none;
+  --shadow-card:    0 0.5px 0 #E5E5EA;
+
+  --ease:           cubic-bezier(0.28, 0.11, 0.32, 1);
+  --transition:     all 200ms var(--ease);
+}
+
+:root {
+  --el-color-primary: #1D1D1F;
+  --el-color-primary-light-3: #424245;
+  --el-color-primary-light-5: #6E6E73;
+  --el-color-primary-light-7: #A1A1A6;
+  --el-color-primary-light-8: #D2D2D7;
+  --el-color-primary-light-9: #F5F5F7;
+  --el-color-primary-dark-2: #17181c;
+}
+
+:root {
+  --el-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--el-font-family);
+}
+
+body {
+  background: #F5F5F7 !important;
+  color: #1D1D1F !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+}
+
+.el-card {
+  background: #FFFFFF !important;
+  box-shadow: 0 0.5px 0 #E5E5EA !important;
+  border: 0.5px solid #E5E5EA !important;
+  border-radius: 10px !important;
+}
+.el-button--primary {
+  background: #1D1D1F !important;
+  border-color: #1D1D1F !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+}
+.el-button--primary:hover {
+  background: #424245 !important;
+  border-color: #424245 !important;
+}
+.el-button--default {
+  border-color: #D2D2D7 !important;
+  border-radius: 8px !important;
+  color: #1D1D1F !important;
+}
+a { color: #1D1D1F; text-decoration: none; }
+a:hover { color: #424245; }
+
+/* Element Plus 输入框 → Apple 风格 */
+.el-input__wrapper, .el-textarea__inner {
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 0.5px #D2D2D7 !important;
+}
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #1D1D1F !important;
+}
+
+/* =====================================================================
+   Product UI refresh
+   One restrained system for the enterprise workspace. Keep this block
+   last: it replaces the historical theme experiments above.
+   ===================================================================== */
+
+:root {
+  color-scheme: light;
+
+  --bg-page: #F4F6F9;
+  --bg-subtle: #EEF2F6;
+  --surface: #FFFFFF;
+  --surface-subtle: #F8FAFC;
+  --surface-hover: #F1F5F9;
+
+  --ink-1: #172033;
+  --ink-2: #344054;
+  --ink-3: #667085;
+  --ink-4: #98A2B3;
+  --ink-5: #B4BBC6;
+
+  --line: #E4E7EC;
+  --line-strong: #D0D5DD;
+  --line-soft: #EEF1F5;
+
+  --brand: #2563EB;
+  --brand-hover: #1D4ED8;
+  --brand-active: #1E40AF;
+  --brand-ink: #1D4ED8;
+  --brand-soft: #EFF6FF;
+  --brand-soft-2: #DBEAFE;
+
+  --success: #15803D;
+  --warning: #B45309;
+  --danger: #B42318;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-pill: 999px;
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, .04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .03);
+  --shadow-md: 0 6px 16px rgba(15, 23, 42, .08), 0 2px 5px rgba(15, 23, 42, .04);
+  --shadow-lg: 0 12px 30px rgba(15, 23, 42, .10);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, .035);
+  --shadow-brand: 0 5px 14px rgba(37, 99, 235, .18);
+
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --transition: 160ms var(--ease);
+
+  --el-color-primary: #2563EB;
+  --el-color-primary-light-3: #5B84EF;
+  --el-color-primary-light-5: #8AA9F5;
+  --el-color-primary-light-7: #BDD0FA;
+  --el-color-primary-light-8: #DBE7FD;
+  --el-color-primary-light-9: #EFF6FF;
+  --el-color-primary-dark-2: #1D4ED8;
+  --el-color-success: #15803D;
+  --el-color-warning: #B45309;
+  --el-color-danger: #B42318;
+  --el-text-color-primary: #172033;
+  --el-text-color-regular: #344054;
+  --el-text-color-secondary: #667085;
+  --el-text-color-placeholder: #98A2B3;
+  --el-border-color: #D0D5DD;
+  --el-border-color-light: #E4E7EC;
+  --el-border-color-lighter: #EEF1F5;
+  --el-fill-color-light: #F8FAFC;
+  --el-fill-color-lighter: #FBFCFD;
+  --el-fill-color-blank: #FFFFFF;
+  --el-bg-color: #FFFFFF;
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-box-shadow-light: var(--shadow-md);
+  --el-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body,
+#app {
+  background: var(--bg-page) !important;
+  color: var(--ink-1) !important;
+  font-family: var(--el-font-family) !important;
+  font-size: 14px;
+  letter-spacing: 0;
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3,
+h4,
+.display {
+  color: var(--ink-1);
+  font-family: var(--el-font-family) !important;
+  letter-spacing: -.018em;
+}
+
+.mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+body::before { display: none !important; }
+::selection { background: var(--brand-soft-2); color: var(--brand-active); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  min-height: 36px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  background: rgba(100, 116, 139, .42);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  border: 2px solid transparent;
+  background: rgba(71, 85, 105, .62);
+  background-clip: padding-box;
+}
+
+a { color: var(--brand); }
+a:hover { color: var(--brand-hover); }
+
+:where(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.el-card {
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--surface) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.el-button {
+  min-height: 36px;
+  border-radius: var(--radius-sm) !important;
+  font-weight: 600 !important;
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition), transform var(--transition) !important;
+}
+
+.el-button:active:not(.is-disabled) { transform: translateY(1px); }
+.el-button--primary {
+  border-color: var(--brand) !important;
+  background: var(--brand) !important;
+  color: #FFFFFF !important;
+  box-shadow: none !important;
+}
+.el-button--primary:hover,
+.el-button--primary:focus-visible {
+  border-color: var(--brand-hover) !important;
+  background: var(--brand-hover) !important;
+  color: #FFFFFF !important;
+}
+.el-button--primary:active { background: var(--brand-active) !important; }
+.el-button--default {
+  border-color: var(--line-strong) !important;
+  background: var(--surface) !important;
+  color: var(--ink-2) !important;
+}
+.el-button--default:hover {
+  border-color: #AABBDD !important;
+  background: var(--surface-subtle) !important;
+  color: var(--brand) !important;
+}
+.el-button.is-text,
+.el-button--text { color: var(--brand) !important; }
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner,
+.el-date-editor.el-input__wrapper {
+  min-height: 38px;
+  border-radius: var(--radius-sm) !important;
+  background: var(--surface) !important;
+  box-shadow: 0 0 0 1px var(--line-strong) inset !important;
+  transition: box-shadow var(--transition), background-color var(--transition) !important;
+}
+.el-input__wrapper:hover,
+.el-select__wrapper:hover,
+.el-textarea__inner:hover { box-shadow: 0 0 0 1px #AAB2BE inset !important; }
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--brand) inset, 0 0 0 3px var(--brand-soft) !important;
+}
+
+.el-table {
+  --el-table-border-color: var(--line-soft);
+  --el-table-header-bg-color: var(--surface-subtle);
+  --el-table-row-hover-bg-color: #F8FAFF;
+  color: var(--ink-2) !important;
+  border-radius: var(--radius-sm);
+}
+.el-table th.el-table__cell {
+  height: 44px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 650;
+}
+.el-table td.el-table__cell { height: 48px; }
+
+.el-tabs__item { color: var(--ink-3); font-weight: 560; }
+.el-tabs__item:hover,
+.el-tabs__item.is-active { color: var(--brand); }
+.el-tabs__active-bar { height: 2px; background: var(--brand); }
+.el-tabs__nav-wrap::after { height: 1px; background: var(--line); }
+
+.el-dialog,
+.el-drawer,
+.el-message-box {
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-xl) !important;
+  background: var(--surface) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+.el-dialog__title,
+.el-message-box__title { color: var(--ink-1); font-weight: 700; }
+
+.el-dropdown__popper,
+.el-select__popper,
+.el-picker__popper,
+.el-popover.el-popper {
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+.el-dropdown-menu__item,
+.el-select-dropdown__item { border-radius: 6px; }
+
+.el-tag {
+  border-radius: 6px !important;
+  font-weight: 560;
+}
+.el-pagination button,
+.el-pagination .el-pager li { border-radius: 6px !important; }
+.el-pagination .el-pager li.is-active { background: var(--brand) !important; color: #FFFFFF !important; }
+
+.el-alert { border: 1px solid currentColor; border-radius: var(--radius-sm) !important; }
+.el-empty__description p { color: var(--ink-4); }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

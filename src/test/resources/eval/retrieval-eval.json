@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 2,
+  "description": "可移植的召回评测模板。模板默认禁用，不假设部署环境中存在任何特定文档；复制用例、替换真实真值并将 enabled 改为 true 后再运行。",
+  "dataset": {
+    "owner": "",
+    "knowledgeSnapshot": "",
+    "language": "zh-CN"
+  },
+  "defaults": {
+    "topK": 10
+  },
+  "cases": [
+    {
+      "id": "exact-term-template",
+      "enabled": false,
+      "question": "替换为包含产品型号、条款编号或内部缩写的真实问题",
+      "history": "",
+      "kbIds": [0],
+      "topK": 6,
+      "tags": ["专名", "精确词", "BM25"],
+      "expect": [
+        {
+          "id": "target-passage",
+          "knowledgeBaseId": 0,
+          "sourceNameContains": "替换为真实文件名片段",
+          "contentContains": "替换为应被召回的关键原文"
+        }
+      ],
+      "exclude": [],
+      "notes": "knowledgeBaseId、sourceNameContains、contentContains 可单独使用；同时填写时按 AND 匹配。"
+    },
+    {
+      "id": "follow-up-template",
+      "enabled": false,
+      "question": "那安装条件呢？",
+      "history": "用户：替换为上一轮明确提到真实对象的对话\n助手：替换为上一轮回答摘要",
+      "kbIds": [0],
+      "tags": ["多轮", "指代消解", "短问题"],
+      "expect": [
+        {
+          "id": "resolved-object-passage",
+          "knowledgeBaseId": 0,
+          "contentContains": "替换为安装条件中的关键原文"
+        }
+      ],
+      "exclude": [],
+      "notes": "用于验证问题理解能利用 history 将‘那/它/这个’补全为可独立检索的问题。"
+    },
+    {
+      "id": "acl-isolation-template",
+      "enabled": false,
+      "question": "替换为两个知识范围中都可能出现的真实同名问题",
+      "history": "",
+      "kbIds": [0],
+      "tags": ["ACL", "同名文档", "越权防护"],
+      "expect": [
+        {
+          "id": "allowed-document",
+          "knowledgeBaseId": 0
+        }
+      ],
+      "exclude": [
+        {
+          "id": "forbidden-document",
+          "knowledgeBaseId": -1
+        }
+      ],
+      "notes": "将 0 替换为允许检索的真实文档 ID，将 -1 替换为明确不允许返回的真实文档 ID。"
+    }
+  ]
+}

@@ -1,0 +1,243 @@
+# ═══════════════════════════════════════════════════════════════════
+# MindCrew · 全栈一键启动（开发 / 本地演示）
+#
+# 启动:    docker compose up -d --build
+# 停止:    docker compose down
+# 清数据:  docker compose down -v
+# 查日志:  docker compose logs -f backend
+#
+# 访问:
+#   前端 → http://localhost
+#   后端 → http://localhost:8090
+#   MinIO 控制台 → http://localhost:9001 (minioadmin/minioadmin)
+#   Milvus → grpc localhost:19530
+# ═══════════════════════════════════════════════════════════════════
+
+services:
+
+  # ═══════════════ 数据存储 ═══════════════
+  mysql:
+    image: mysql:8.0
+    container_name: mindcrew-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: docmind
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --max-allowed-packet=64M
+      - --innodb-buffer-pool-size=512M
+    volumes:
+      - mindcrew_mysql_data:/var/lib/mysql
+      - ./sql:/sql-bundle:ro                              # 全部 SQL 文件供 init 脚本读取
+      - ./sql/docker-init:/docker-entrypoint-initdb.d:ro  # 首次启动自动执行
+    ports:
+      - "3309:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: mindcrew-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    volumes:
+      - mindcrew_redis_data:/data
+    ports:
+      - "6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ═══════════════ Milvus 向量库（standalone 三件套） ═══════════════
+  milvus-etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: mindcrew-etcd
+    restart: unless-stopped
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    command: >
+      etcd
+      --advertise-client-urls=http://milvus-etcd:2379
+      --listen-client-urls=http://0.0.0.0:2379
+      --data-dir=/etcd
+    volumes:
+      - mindcrew_etcd_data:/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  minio:
+    image: minio/minio:latest
+    container_name: mindcrew-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - mindcrew_minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  milvus:
+    image: milvusdb/milvus:v2.3.4
+    container_name: mindcrew-milvus
+    restart: unless-stopped
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: milvus-etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MINIO_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - mindcrew_milvus_data:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      milvus-etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ═══════════════ 后端 ═══════════════
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        UBUNTU_MIRROR: ${UBUNTU_MIRROR:-https://mirrors.cloud.tencent.com/ubuntu}
+    image: mindcrew/backend:latest
+    container_name: mindcrew-backend
+    restart: on-failure:5
+    environment:
+      # JVM
+      # Docker Desktop 当前总内存约 3.6 GiB；限制堆与 Netty/gRPC 直接内存，
+      # 避免长时间知识重建与 Milvus 共存时被宿主机 OOM killer 以 137 终止。
+      JAVA_OPTS: ${MINDCREW_JAVA_OPTS:--Xms384m -Xmx1152m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxDirectMemorySize=256m -Djava.awt.headless=true}
+
+      # 数据源
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/docmind?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+
+      # Redis
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+      # Milvus
+      MILVUS_HOST: milvus
+      MILVUS_PORT: 19530
+
+      # 存储 · 默认本地 MinIO；切 OSS 通过环境变量传入
+      STORAGE_TYPE: ${STORAGE_TYPE:-minio}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET_NAME: mindcrew
+
+      OSS_ENDPOINT: ${OSS_ENDPOINT:-}
+      OSS_REGION: ${OSS_REGION:-}
+      OSS_BUCKET: ${OSS_BUCKET:-}
+      OSS_ACCESS_KEY: ${OSS_ACCESS_KEY:-}
+      OSS_SECRET_KEY: ${OSS_SECRET_KEY:-}
+
+      # LLM · 必须传 BAILIAN_API_KEY
+      BAILIAN_API_KEY: ${BAILIAN_API_KEY:?BAILIAN_API_KEY 必须在 .env 设置}
+
+      # LLM 模型（.env 可覆盖，默认 qwen-plus）
+      LLM_CHAT_MODEL: ${LLM_CHAT_MODEL:-qwen-plus}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode}
+
+      # Web 搜索
+      WEB_SEARCH_PROVIDER: ${WEB_SEARCH_PROVIDER:-baidu}
+      BAIDU_SEARCH_API_KEY: ${BAIDU_SEARCH_API_KEY:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+      DOCMIND_WEB_SEARCH_ENABLED: ${DOCMIND_WEB_SEARCH_ENABLED:-true}
+
+      # 全球获客 (Lead Hunter) · Hunter.io 可选
+      HUNTER_API_KEY: ${HUNTER_API_KEY:-}
+
+      # 加密主密钥（生产必须改！）
+      CRYPTO_MASTER_KEY: ${CRYPTO_MASTER_KEY:-please-change-me-in-production-32chars-min}
+
+      # JVM 时区
+      TZ: Asia/Shanghai
+    volumes:
+      - mindcrew_uploads:/app/uploads
+      - mindcrew_logs:/app/logs
+    ports:
+      - "8090:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 180s
+      retries: 3
+
+  # ═══════════════ 前端 ═══════════════
+  frontend:
+    build:
+      context: ./MindCrew-frontend
+      dockerfile: Dockerfile
+    image: mindcrew/frontend:latest
+    container_name: mindcrew-frontend
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    volumes:
+      # 3D 办公室 React 静态文件 · 防止容器重建时丢失
+      - /Users/calix_0520/WorkBuddy/2026-08-18-09-42-20/nexus-3d-office/dist:/usr/share/nginx/html/3d-office:ro
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mindcrew_mysql_data:
+  mindcrew_redis_data:
+  mindcrew_minio_data:
+  mindcrew_etcd_data:
+  mindcrew_milvus_data:
+  mindcrew_uploads:
+  mindcrew_logs:

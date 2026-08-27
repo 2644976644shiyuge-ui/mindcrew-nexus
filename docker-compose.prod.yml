@@ -1,0 +1,205 @@
+# ═══════════════════════════════════════════════════════════════════
+# MindCrew · 阿里云生产部署 compose
+#
+# 与开发 compose 区别：
+#   - MySQL / Redis / 对象存储 全部用阿里云托管服务（RDS / Tair / OSS）
+#   - 容器只跑：milvus(三件套) + backend + frontend
+#   - 资源参数对生产优化（更大堆/连接池）
+#
+# 启动:    docker compose -f docker-compose.prod.yml up -d --build
+# 滚动更新: docker compose -f docker-compose.prod.yml up -d --no-deps --build backend
+# 查日志:   docker compose -f docker-compose.prod.yml logs -f backend
+#
+# 前置：把以下环境变量写入 .env.prod
+#   MYSQL_HOST / MYSQL_PASSWORD
+#   REDIS_HOST / REDIS_PASSWORD
+#   OSS_ENDPOINT / OSS_REGION / OSS_BUCKET / OSS_ACCESS_KEY / OSS_SECRET_KEY
+#   BAILIAN_API_KEY
+#   CRYPTO_MASTER_KEY (32 字符以上随机串)
+# ═══════════════════════════════════════════════════════════════════
+
+services:
+
+  # ═══════════════ Milvus（生产仍需自建） ═══════════════
+  milvus-etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: mindcrew-etcd
+    restart: always
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    command: >
+      etcd
+      --advertise-client-urls=http://milvus-etcd:2379
+      --listen-client-urls=http://0.0.0.0:2379
+      --data-dir=/etcd
+    volumes:
+      - /data/mindcrew/etcd:/etcd
+    networks: [mindcrew]
+
+  milvus-minio:
+    # Milvus 自身要存数据，需要 S3 兼容存储；这里给 Milvus 用的独立 MinIO
+    # （不影响业务对象存储，业务对象存储走阿里云 OSS）
+    image: minio/minio:latest
+    container_name: mindcrew-milvus-storage
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MILVUS_MINIO_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MILVUS_MINIO_PASSWORD:-minioadmin}
+    volumes:
+      - /data/mindcrew/milvus-minio:/data
+    networks: [mindcrew]
+
+  milvus:
+    image: milvusdb/milvus:v2.3.4
+    container_name: mindcrew-milvus
+    restart: always
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: milvus-etcd:2379
+      MINIO_ADDRESS: milvus-minio:9000
+      MINIO_ACCESS_KEY_ID: ${MILVUS_MINIO_USER:-minioadmin}
+      MINIO_SECRET_ACCESS_KEY: ${MILVUS_MINIO_PASSWORD:-minioadmin}
+    volumes:
+      - /data/mindcrew/milvus:/var/lib/milvus
+    ports:
+      - "19530:19530"   # 仅内网安全组开放即可
+    depends_on: [milvus-etcd, milvus-minio]
+    networks: [mindcrew]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ═══════════════ Redis（缓存 · 容器内自建，无需买 Tair） ═══════════════
+  # Redis 在本项目只做缓存（热点问答/查询计数），丢失不影响业务数据，
+  # 故跑在 ECS 容器里即可。仅挂在内部 docker 网络，不对外暴露端口。
+  redis:
+    image: redis:7-alpine
+    container_name: mindcrew-redis
+    restart: always
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD}     # 让 healthcheck 的 redis-cli 自动带密码
+    volumes:
+      - /data/mindcrew/redis:/data
+    networks: [mindcrew]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ═══════════════ 后端 ═══════════════
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        UBUNTU_MIRROR: ${UBUNTU_MIRROR:-https://mirrors.cloud.tencent.com/ubuntu}
+    image: mindcrew/backend:${IMAGE_TAG:-latest}
+    container_name: mindcrew-backend
+    restart: always
+    environment:
+      JAVA_OPTS: ${JAVA_OPTS:--Xms2g -Xmx4g -XX:+UseG1GC -XX:MaxRAMPercentage=75.0}
+
+      # 阿里云 RDS（外部）
+      SPRING_DATASOURCE_URL: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT:-3306}/docmind?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-root}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD required}
+
+      # Redis（容器内自建 · REDIS_HOST 默认指向上面的 redis 容器）
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+
+      # Milvus（同 docker 网络）
+      MILVUS_HOST: milvus
+      MILVUS_PORT: 19530
+
+      # 强制走 OSS · 生产严禁 minio
+      STORAGE_TYPE: oss
+      OSS_ENDPOINT: ${OSS_ENDPOINT:?OSS_ENDPOINT required}
+      OSS_REGION: ${OSS_REGION:?OSS_REGION required}
+      OSS_BUCKET: ${OSS_BUCKET:?OSS_BUCKET required}
+      OSS_ACCESS_KEY: ${OSS_ACCESS_KEY:?OSS_ACCESS_KEY required}
+      OSS_SECRET_KEY: ${OSS_SECRET_KEY:?OSS_SECRET_KEY required}
+      OSS_CUSTOM_DOMAIN: ${OSS_CUSTOM_DOMAIN:-}
+
+      # 百炼
+      BAILIAN_API_KEY: ${BAILIAN_API_KEY:?BAILIAN_API_KEY required}
+      WEB_SEARCH_PROVIDER: ${WEB_SEARCH_PROVIDER:-baidu}
+      BAIDU_SEARCH_API_KEY: ${BAIDU_SEARCH_API_KEY:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+      DOCMIND_WEB_SEARCH_ENABLED: ${DOCMIND_WEB_SEARCH_ENABLED:-true}
+
+      # 加密主密钥（生产必须）
+      CRYPTO_MASTER_KEY: ${CRYPTO_MASTER_KEY:?CRYPTO_MASTER_KEY required (32+ chars random)}
+
+      # JWT 签名密钥（用户 token 签名 · 必须从 .env.prod 注入，否则回退默认值导致旧 token 验签失败）
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
+
+      # 阿里云 BSS 账单对账（可选 · 定期拉真实账单校准估算成本 · 不配则自动跳过）
+      BSS_ENABLED: ${BSS_ENABLED:-false}
+      BSS_ACCESS_KEY: ${BSS_ACCESS_KEY:-}
+      BSS_SECRET_KEY: ${BSS_SECRET_KEY:-}
+      BSS_REGION: ${BSS_REGION:-cn-hangzhou}
+      BSS_PRODUCT_CODES: ${BSS_PRODUCT_CODES:-dashscope}
+      BSS_ALERT_THRESHOLD: ${BSS_ALERT_THRESHOLD:-0.10}
+      BSS_RECONCILE_CRON: ${BSS_RECONCILE_CRON:-0 30 3 * * ?}
+
+      # 语音播报情绪开关（需用真实 DashScope Key 验证 cosyvoice-v2 是否接受 emotion 参数后再开）
+      TTS_EMOTION_ENABLED: ${TTS_EMOTION_ENABLED:-false}
+
+      # JVM
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: prod
+    volumes:
+      - /data/mindcrew/uploads:/app/uploads
+      - /data/mindcrew/logs:/app/logs
+    depends_on:
+      milvus:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [mindcrew]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 5G
+
+  # ═══════════════ 前端 + 反向代理（也兼对外网关） ═══════════════
+  frontend:
+    build:
+      context: ./MindCrew-frontend
+      dockerfile: Dockerfile
+    image: mindcrew/frontend:${IMAGE_TAG:-latest}
+    container_name: mindcrew-frontend
+    restart: always
+    ports:
+      # 只绑到宿主机本地回环的 8000，由宿主机 nginx 反代 + 终结 HTTPS
+      - "127.0.0.1:8000:80"
+    depends_on: [backend]
+    networks: [mindcrew]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  mindcrew:
+    driver: bridge

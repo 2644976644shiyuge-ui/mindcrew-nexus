@@ -1,0 +1,4 @@
+FROM mindcrew/frontend:latest
+
+# 依赖已经在宿主机完成类型检查与 Vite 生产构建；只覆盖静态产物，保留已验证的 Nginx 配置。
+COPY MindCrew-frontend/dist /usr/share/nginx/html
