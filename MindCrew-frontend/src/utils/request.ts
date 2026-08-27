@@ -11,27 +11,6 @@ function showRequestError(message: string, config?: unknown) {
   })
 }
 
-function resolveRequestErrorMessage(error: any): string {
-  const responseData = error.response?.data
-  if (responseData && typeof responseData === 'object') {
-    const serverMessage = responseData.message || responseData.error
-    if (serverMessage) return String(serverMessage)
-  }
-  if (error.response?.status >= 500) {
-    return '服务暂时不可用，请稍后重试'
-  }
-  if (typeof responseData === 'string' && responseData.trim()) {
-    return responseData.trim()
-  }
-  if (error.code === 'ECONNABORTED') {
-    return '请求超时，请稍后重试'
-  }
-  if (!error.response) {
-    return '无法连接服务器，请确认服务已启动'
-  }
-  return error.message || '网络错误'
-}
-
 const request = axios.create({
   baseURL: '/api',
   timeout: 30000,
@@ -125,7 +104,7 @@ request.interceptors.response.use(
         // 不是 JSON 就用默认逻辑
       }
     }
-    const msg = resolveRequestErrorMessage(error)
+    const msg = error.response?.data?.message || error.message || '网络错误'
     showRequestError(msg, error.config)
     return Promise.reject(error)
   }

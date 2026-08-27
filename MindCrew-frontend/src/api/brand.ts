@@ -7,7 +7,7 @@ export interface BrandSettings {
 
 export const brandApi = {
   getPublic: (): Promise<BrandSettings> =>
-    request.get('/system/brand', { silentError: true } as any),
+    request.get('/system/brand'),
 
   getSettings: (): Promise<BrandSettings> =>
     request.get('/admin/brand-settings'),
