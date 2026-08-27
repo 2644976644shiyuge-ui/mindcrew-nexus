@@ -131,7 +131,7 @@
           <div class="stat-chip"><b>{{ stats.discovered }}</b><span>发现公司</span></div>
           <div class="stat-chip"><b>{{ stats.contacts }}</b><span>联系人</span></div>
           <div class="stat-chip ok"><b>{{ stats.emailVerified }}</b><span>邮箱已验证</span></div>
-          <div class="stat-chip warn"><b>{{ stats.duplicates + stats.rejected }}</b><span>去重/剔除</span></div>
+          <div class="stat-chip warn"><b>{{ stats.rejected }}</b><span>本次筛选</span></div>
           <div class="stat-chip final"><b>{{ stats.finalLeads }}</b><span>最终线索</span></div>
         </div>
 
