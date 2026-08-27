@@ -399,7 +399,7 @@ onBeforeUnmount(() => {
 .comp-bar { flex: 1; height: 6px; background: #F2F2F7; border-radius: 980px; overflow: hidden; }
 .comp-fill { height: 100%; border-radius: 980px; background: linear-gradient(90deg, #FF9F0A, #FF3B30); }
 .comp-num { width: 50px; text-align: right; font-weight: 600; color: var(--warn); }
-.ai-judge { margin-top: 8px; font-size: 12px; color: var(--accent); font-style: italic; padding: 8px 12px; background: #F7FBFF; border-radius: 10px; border-left: 3px solid var(--accent); }
+.ai-judge { margin-top: 8px; font-size: 12px; color: var(--accent); font-style: italic; padding: 8px 12px; background: #F7FBFF; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent); }
 .empty-hint { font-size: 12px; color: var(--ink3); padding: 12px 0; }
 .prod-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 13px; }
 .prod-idx { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }

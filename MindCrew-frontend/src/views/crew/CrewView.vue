@@ -924,7 +924,6 @@ onBeforeUnmount(() => {
   height: 100%;
   background: linear-gradient(90deg, var(--brand-hover), #0a0a0a);
   border-radius: 2px;
-  transition: width 400ms var(--ease);
 }
 
 /* Agent 卡片 */
@@ -1711,7 +1710,7 @@ textarea:focus-visible {
 .report-body :deep(h3) { margin: 26px 0 10px; color: #3e3f46; font-size: 16px; }
 .report-body :deep(p) { margin: 0 0 14px; }
 .report-body :deep(a) { color: #7a5a04; text-decoration-color: rgba(122, 90, 4, 0.35); text-underline-offset: 3px; }
-.report-body :deep(blockquote) { margin: 22px 0; padding: 14px 18px; border-left: 3px solid var(--crew-accent); background: #f7f3e8; color: #56575d; }
+.report-body :deep(blockquote) { margin: 22px 0; padding: 14px 18px; border: 1px solid var(--crew-line); border-radius: 10px; background: #f7f3e8; color: #56575d; }
 .report-body :deep(table) { width: 100%; margin: 22px 0; border-collapse: collapse; font-size: 12px; }
 .report-body :deep(th),
 .report-body :deep(td) { padding: 11px 12px; border-bottom: 1px solid var(--crew-line); text-align: left; vertical-align: top; }

@@ -210,6 +210,6 @@ onBeforeUnmount(() => {
 .top-item { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
 .top-name { width: 118px; flex-shrink: 0; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .top-bar { flex: 1; height: 8px; background: #F2F2F7; border-radius: 980px; overflow: hidden; }
-.top-fill { height: 100%; border-radius: 980px; background: linear-gradient(90deg, #5AA9F5, #0071E3); transition: width .5s var(--ease, ease); }
+.top-fill { height: 100%; border-radius: 980px; background: #0071E3; }
 .top-num { width: 34px; text-align: right; font-weight: 700; color: #0071E3; font-family: 'SF Mono', Menlo, monospace; }
 </style>

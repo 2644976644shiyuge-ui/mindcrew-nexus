@@ -14,6 +14,7 @@ import './assets/base.css'
 import './assets/main.css'
 import './assets/mobile.css'   // 全局移动端适配 · 仅 @media (max-width: 768px) 生效，Web 端不受影响
 import './assets/nexus-experience.css'
+import './assets/product-system.css'
 
 const app = createApp(App)
 const pinia = createPinia()

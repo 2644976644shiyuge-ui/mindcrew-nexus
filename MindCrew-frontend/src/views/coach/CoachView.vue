@@ -964,10 +964,7 @@ onMounted(() => {
 .stat-value {
   font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1;
   font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--value-gradient, linear-gradient(135deg, var(--ink-1), var(--ink-2)));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--ink-1);
   font-variant-numeric: tabular-nums;
 }
 .stat-sub { font-size: 11.5px; color: var(--ink-4); font-weight: 500; }
@@ -1320,7 +1317,6 @@ onMounted(() => {
   height: 100%;
   background: #34C759;
   border-radius: 4px;
-  transition: width .4s ease;
 }
 .recent-item.acc-mid  .recent-bar-fill { background: #FF9F0A; }
 .recent-item.acc-low  .recent-bar-fill { background: #FF3B30; }
@@ -1419,7 +1415,7 @@ onMounted(() => {
 /* feedback */
 .feedback {
   border-radius: 10px; padding: 16px 18px; margin-bottom: 18px;
-  border-left: 4px solid;
+  border: 1px solid;
 }
 .feedback.fb-correct { background: rgba(52, 211, 153, 0.07); border-color: #34d399; }
 .feedback.fb-partial { background: rgba(245, 158, 11, 0.07); border-color: #f59e0b; }

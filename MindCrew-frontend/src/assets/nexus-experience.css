@@ -48,7 +48,7 @@
 
   /* Motion */
   --nx-ease-out: cubic-bezier(.22, 1, .36, 1);
-  --nx-ease-spring: cubic-bezier(.2, 1.35, .35, 1);
+  --nx-ease-spring: var(--nx-ease-out);
   --nx-fast: 140ms;
   --nx-base: 240ms;
   --nx-slow: 520ms;
@@ -400,7 +400,7 @@ h1, h2, h3, h4, h5, h6, .display {
   background: var(--nx-surface);
   color: var(--nx-ink-3);
   box-shadow: var(--nx-shadow-xs);
-  transition: width var(--nx-base) var(--nx-ease-out), border-color var(--nx-base) ease, box-shadow var(--nx-base) ease, transform var(--nx-base) var(--nx-ease-spring);
+  transition: border-color var(--nx-base) ease, box-shadow var(--nx-base) ease, transform var(--nx-base) var(--nx-ease-out);
 }
 
 #app .search-command:hover {
@@ -617,8 +617,8 @@ h1, h2, h3, h4, h5, h6, .display {
 .el-input__wrapper.is-focus,
 .el-select__wrapper.is-focused,
 .el-textarea__inner:focus {
-  border-color: var(--nx-dark) !important;
-  box-shadow: 0 0 0 3px rgb(36 37 43 / 12%) !important;
+  border-color: var(--nx-accent) !important;
+  box-shadow: var(--nx-focus-ring) !important;
 }
 
 /* Element Plus inputs are composite controls: the wrapper owns the visible
@@ -636,8 +636,8 @@ h1, h2, h3, h4, h5, h6, .display {
 }
 
 #app .login-page .form-pane .el-input__wrapper.is-focus {
-  border-color: var(--nx-dark) !important;
-  box-shadow: 0 0 0 3px rgb(36 37 43 / 12%) !important;
+  border-color: var(--nx-accent) !important;
+  box-shadow: var(--nx-focus-ring) !important;
 }
 
 .el-card {
@@ -658,7 +658,7 @@ h1, h2, h3, h4, h5, h6, .display {
 
 .el-overlay { background: rgb(36 37 43 / 38%) !important; backdrop-filter: blur(8px); }
 .el-overlay-dialog { perspective: 1200px; }
-.el-overlay-dialog .el-dialog { animation: nx-dialog-in 320ms var(--nx-ease-spring) both; }
+.el-overlay-dialog .el-dialog { animation: nx-dialog-in 320ms var(--nx-ease-out) both; }
 
 .el-table {
   border-radius: var(--nx-radius-md) !important;

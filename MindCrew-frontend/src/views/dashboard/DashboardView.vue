@@ -348,7 +348,7 @@ onUnmounted(() => { trendChart?.dispose(); docStatusChart?.dispose(); roleChart?
 .rank-no.top { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.3); color: var(--primary); }
 .rank-name { width: 180px; font-size: 12.5px; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
 .rank-bar-wrap { flex: 1; background: var(--bg-elevated); border-radius: 2px; height: 6px; overflow: hidden; }
-.rank-bar { height: 100%; background: linear-gradient(90deg, #38bdf8, #71717a); border-radius: 2px; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+.rank-bar { height: 100%; background: #0071e3; border-radius: 2px; }
 .rank-val { width: 40px; text-align: right; font-size: 12px; color: #64748b; font-family: monospace; flex-shrink: 0; }
 
 /* 质量统计 */

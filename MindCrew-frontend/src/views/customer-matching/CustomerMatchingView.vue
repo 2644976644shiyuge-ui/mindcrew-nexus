@@ -300,11 +300,11 @@ function viewGraph() { router.push('/knowledge-graph') }
 .app-reason { font-size: 12px; color: var(--ink2); margin-bottom: 4px; }
 .app-solution { font-size: 12px; color: var(--ink2); }
 .comp-brand { color: var(--red); }
-.ai-strategy { margin-top: 10px; padding: 10px 14px; background: #FFF7F7; border-left: 3px solid var(--red); border-radius: 8px; font-size: 12px; line-height: 1.6; }
+.ai-strategy { margin-top: 10px; padding: 10px 14px; background: #FFF7F7; border: 1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius: 8px; font-size: 12px; line-height: 1.6; }
 .strat-section { margin-bottom: 14px; }
 .strat-section:last-child { margin-bottom: 0; }
 .strat-label { font-size: 12px; font-weight: 700; color: var(--ink2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-.strat-content { font-size: 14px; line-height: 1.6; padding: 12px 16px; background: #F7FBFF; border-left: 3px solid var(--accent); border-radius: 8px; }
+.strat-content { font-size: 14px; line-height: 1.6; padding: 12px 16px; background: #F7FBFF; border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent); border-radius: 8px; }
 .email-sub { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
 .email-no { width: 18px; height: 18px; border-radius: 50%; background: #1D1D1F; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .why-text { font-size: 14px; line-height: 1.8; color: var(--ink); padding: 14px 18px; background: #F5F5F7; border-radius: 12px; }

@@ -311,7 +311,7 @@ const handleRegister = async () => {
   justify-content: center;
   background: #F5F7FB;
   overflow: hidden;
-  font-family: 'Inter', -apple-system, 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', sans-serif;
+  font-family: 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', 'PingFang SC', system-ui, sans-serif;
 }
 
 .login-shell {

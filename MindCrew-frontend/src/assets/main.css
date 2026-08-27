@@ -20,7 +20,7 @@ html, body, #app {
   height: 100%;
   background: var(--bg-page);
   color: var(--ink-1);
-  font-family: 'Plus Jakarta Sans', 'Noto Sans SC', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'SF Pro Text', 'SF Pro Display', 'Noto Sans SC', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
   font-feature-settings: 'kern';
   letter-spacing: -0.003em;
@@ -149,8 +149,14 @@ body::before {
 
   /* Motion */
   --ease:           cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-bounce:    cubic-bezier(0.34, 1.56, 0.64, 1);
-  --transition:     all 200ms var(--ease);
+  --ease-bounce:    var(--ease);
+  --transition:
+    color 200ms var(--ease),
+    background-color 200ms var(--ease),
+    border-color 200ms var(--ease),
+    box-shadow 200ms var(--ease),
+    transform 200ms var(--ease),
+    opacity 200ms var(--ease);
 
   /* ── Legacy aliases (so existing components still compile) ── */
   --primary:        var(--brand);
@@ -683,11 +689,9 @@ body::before {
 .page-container { padding: 28px; height: 100%; overflow-y: auto; }
 
 .gradient-text {
-  background: linear-gradient(135deg, var(--brand), var(--accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--brand-ink);
 }
 
 .card-surface {
@@ -845,10 +849,10 @@ body::before {
 }
 .md-body pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
 .md-body blockquote {
-  border-left: 3px solid var(--brand);
+  border: 1px solid var(--line);
   padding: 10px 16px;
   background: var(--brand-soft);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: var(--radius-sm);
   margin: 0.8em 0;
   color: var(--ink-2);
 }
@@ -1261,8 +1265,14 @@ body::before {
 
   /* Motion - 更克制（150-250ms ease-out） */
   --ease:           cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-bounce:    cubic-bezier(0.34, 1.56, 0.64, 1);
-  --transition:     all 150ms var(--ease);
+  --ease-bounce:    var(--ease);
+  --transition:
+    color 150ms var(--ease),
+    background-color 150ms var(--ease),
+    border-color 150ms var(--ease),
+    box-shadow 150ms var(--ease),
+    transform 150ms var(--ease),
+    opacity 150ms var(--ease);
 }
 
 /* Element Plus 主题色 → ZYCOO 红（覆盖默认蓝紫） */

@@ -744,6 +744,5 @@ defineExpose({ loadMyVoices })
 .meter-bar {
   height: 100%;
   background: linear-gradient(90deg, #38bdf8, #0a0a0a);
-  transition: width .08s linear;
 }
 </style>

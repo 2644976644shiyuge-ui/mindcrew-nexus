@@ -297,9 +297,9 @@ function formatTime(t?: string) {
 .fb-card { background: var(--bg-surface); border: 1px solid var(--line); border-radius: 12px;
   padding: 16px 20px; margin-bottom: 14px; transition: box-shadow 0.15s; }
 .fb-card:hover { box-shadow: var(--shadow-md); }
-.fb-card.status-pending { border-left: 4px solid #f59e0b; }
-.fb-card.status-approved { border-left: 4px solid #34d399; }
-.fb-card.status-rejected { border-left: 4px solid #94a3b8; opacity: 0.75; }
+.fb-card.status-pending { border-color: #f59e0b; }
+.fb-card.status-approved { border-color: #34d399; }
+.fb-card.status-rejected { border-color: #94a3b8; opacity: 0.75; }
 
 .fb-head {
   display: flex; align-items: center; gap: 10px;

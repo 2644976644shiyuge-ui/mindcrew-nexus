@@ -985,7 +985,7 @@ button:focus-visible { outline: 3px solid rgba(189, 141, 8, 0.28); outline-offse
 .detail-block p,
 .detail-block pre { margin: 0; color: #c7c5bf; font-size: 11px; line-height: 1.7; }
 .detail-block pre { max-height: 240px; padding: 13px 14px; overflow: auto; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 11px; background: rgba(255, 255, 255, 0.045); font-family: 'SFMono-Regular', Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
-.detail-block--brief { padding: 13px 14px; border-left: 3px solid var(--graph-accent); border-radius: 0 10px 10px 0; background: rgba(232, 189, 63, 0.08); }
+.detail-block--brief { padding: 13px 14px; border: 1px solid rgba(232, 189, 63, 0.28); border-radius: 10px; background: rgba(232, 189, 63, 0.08); }
 .detail-block--error { padding: 13px 14px; border-radius: 10px; background: rgba(211, 73, 73, 0.09); }
 .detail-block--error h3,
 .detail-block--error p { color: #f0a0a0; }

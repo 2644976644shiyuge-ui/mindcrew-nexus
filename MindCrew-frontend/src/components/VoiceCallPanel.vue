@@ -651,7 +651,7 @@ defineExpose({ startCall, endCall })
   width: 100%; max-width: 280px; height: 5px;
   background: var(--bg-hover); border-radius: 3px; overflow: hidden;
 }
-.meter-bar { height: 100%; transition: width 100ms linear, background 200ms ease; }
+.meter-bar { height: 100%; transition: background 200ms ease; }
 
 .ctrl-bar { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .hint { font-size: 11.5px; color: var(--ink-4); }
