@@ -3620,14 +3620,14 @@ async function probeOneMedia(src: any, allSources: any[]) {
   width: 6px; height: 6px;
   border-radius: 50%;
   background: #94a3b8;
-  animation: dot-fade 1.2s infinite ease-in-out both;
+  animation: dot-bounce 1.2s infinite ease-in-out both;
 }
 .thinking-dots .dot:nth-child(1) { animation-delay: -0.32s; }
 .thinking-dots .dot:nth-child(2) { animation-delay: -0.16s; }
 .thinking-text { font-weight: 500; letter-spacing: 0.02em; }
-@keyframes dot-fade {
-  0%, 80%, 100% { opacity: 0.35; }
-  40%           { opacity: 1; }
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40%          { transform: scale(1);   opacity: 1;   }
 }
 
 /* 来源 */
@@ -4384,7 +4384,7 @@ video.src-media-element { max-height: 320px; }
 /* Excel sheet 标题 + 表格边框 */
 .preview-office :deep(.xlsx-sheet-title) {
   margin: 14px 0 6px; font-size: 13px; font-weight: 600; color: var(--ink-1);
-  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  border-left: 3px solid #6366f1; padding-left: 8px;
 }
 .preview-office :deep(table) {
   border-collapse: collapse; width: 100%; margin-bottom: 18px; font-size: 12.5px;

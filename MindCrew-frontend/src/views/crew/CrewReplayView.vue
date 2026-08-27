@@ -1070,6 +1070,7 @@ onBeforeUnmount(() => {
   inset: 0 auto 0 0;
   background: linear-gradient(90deg, var(--brand-hover), var(--brand));
   border-radius: 3px;
+  transition: width 180ms var(--ease);
 }
 .scrubber-thumb {
   position: absolute;
@@ -1374,7 +1375,7 @@ input:focus-visible {
 .trace-block p,
 .trace-block pre { margin: 0; color: #494a51; font-size: 12px; line-height: 1.75; }
 .trace-block pre { max-height: 360px; padding: 16px 18px; overflow: auto; border: 1px solid rgba(35, 36, 42, 0.09); border-radius: 12px; background: #f4f1eb; font-family: 'SFMono-Regular', Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
-.trace-block--brief { padding: 16px 18px; border: 1px solid rgba(232, 189, 63, 0.32); border-radius: 12px; background: #f7f2e5; }
+.trace-block--brief { padding: 16px 18px; border-left: 3px solid var(--trace-accent); border-radius: 0 12px 12px 0; background: #f7f2e5; }
 .trace-block--error { padding: 15px 18px; border-radius: 12px; background: rgba(184, 55, 55, 0.07); }
 .trace-block--error h3,
 .trace-block--error p { color: #9d3030; }
@@ -1768,6 +1769,7 @@ input:focus-visible {
   height: 100%;
   background: linear-gradient(90deg, #5570FF, #3D5AFE);
   border-radius: 3px;
+  transition: width 220ms ease;
 }
 .fr-lanes {
   display: flex;

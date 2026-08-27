@@ -726,6 +726,7 @@ const loadStats = async () => {
   height: 2px;
   background: linear-gradient(90deg, var(--brand-hover), var(--brand));
   border-radius: 2px;
+  transition: left 220ms var(--ease), width 220ms var(--ease);
 }
 
 /* ─────────────────────────────────────────────

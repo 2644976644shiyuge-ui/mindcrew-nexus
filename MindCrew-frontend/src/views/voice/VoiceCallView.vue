@@ -604,7 +604,7 @@ onBeforeUnmount(() => { endCall() })
   border-radius: 3px;
   overflow: hidden;
 }
-.meter-bar { height: 100%; transition: background 200ms ease; }
+.meter-bar { height: 100%; transition: width 100ms linear, background 200ms ease; }
 
 .ctrl-bar { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
 .hint { font-size: 12px; color: var(--ink-4); }

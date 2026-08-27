@@ -71,23 +71,19 @@ const router = createRouter({
           component: () => import('@/views/chat/ChatView.vue'),
           meta: { title: '智能问答', icon: 'ChatDotRound' }
         },
-        // 数字员工 · 默认进入稳定的员工列表。3D 办公室独立部署时从列表进入。
+        // 数字员工 · 默认进入 3D 办公室
         {
           path: 'digital-employees',
           name: 'DigitalEmployeeList',
-          component: () => import('@/views/digital-employee/DigitalEmployeeListView.vue'),
+          component: () => import('@/views/digital-employee/ThreeDOfficeView.vue'),
           meta: { title: '数字员工', icon: 'Avatar' }
         },
-        // 兼容旧的员工列表链接
+        // 员工列表（从 3D 办公室按钮进入）
         {
           path: 'digital-employees/list',
-          redirect: { name: 'DigitalEmployeeList' },
-        },
-        {
-          path: 'digital-employees/office',
-          name: 'DigitalEmployeeOffice',
-          component: () => import('@/views/digital-employee/ThreeDOfficeView.vue'),
-          meta: { title: '3D 办公室', icon: 'View' }
+          name: 'DigitalEmployeeListView',
+          component: () => import('@/views/digital-employee/DigitalEmployeeListView.vue'),
+          meta: { title: '员工列表', icon: 'Avatar' }
         },
         {
           path: 'digital-employees/:id/chat',

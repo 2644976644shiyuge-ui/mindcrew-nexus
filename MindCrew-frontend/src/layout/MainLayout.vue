@@ -518,7 +518,7 @@ onBeforeUnmount(() => {
 }
 .group-arrow { transition: transform 200ms; }
 .group-arrow.collapsed { transform: rotate(-90deg); }
-.nav-group-items { overflow: hidden; max-height: 400px; }
+.nav-group-items { overflow: hidden; transition: max-height 240ms var(--ease); max-height: 400px; }
 .nav-group-items.is-collapsed { max-height: 0; }
 .nav-item {
   display: flex; align-items: center; gap: 10px;

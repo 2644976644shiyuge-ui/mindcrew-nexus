@@ -58,7 +58,7 @@ onMounted(load)
         <p class="sub">已授权给你的智能同事，点击进入对话</p>
       </div>
       <div class="actions">
-        <el-button @click="$router.push('/digital-employees/office')">
+        <el-button @click="$router.push('/digital-employees')">
           <el-icon><View /></el-icon>&nbsp;3D 办公室
         </el-button>
         <el-button v-if="isAdmin" @click="goAdmin">控制台</el-button>

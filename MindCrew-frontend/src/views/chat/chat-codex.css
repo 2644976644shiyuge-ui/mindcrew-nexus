@@ -422,11 +422,11 @@
   color: var(--chat-muted);
   font-size: 12.5px;
   text-align: left;
-  transition: background 150ms ease, color 150ms ease, transform 150ms var(--nx-ease-out);
+  transition: background 150ms ease, color 150ms ease, padding 150ms ease;
 }
 
 #app .chat-layout .welcome-prompts button span { flex: 1; }
-#app .chat-layout .welcome-prompts button:hover { background: rgb(36 37 43 / 4%); color: var(--chat-ink); transform: translateX(2px); }
+#app .chat-layout .welcome-prompts button:hover { padding-inline: 10px; background: rgb(36 37 43 / 4%); color: var(--chat-ink); }
 
 #app .chat-layout .messages-area {
   min-height: 0;
@@ -545,6 +545,7 @@
   padding: 0 !important;
   transform: translateX(-50%) !important;
   background: transparent !important;
+  transition: width 180ms ease !important;
 }
 
 #app .chat-layout .composer-context-row {
