@@ -104,7 +104,7 @@ public class LeadHunterService {
     };
     public static final String[] STEP_TITLES = {
             "分析知识库", "解析目标条件", "生成 ICP 客户画像", "全球客户发现", "公司验证与补全",
-            "寻找关键联系人", "邮箱验证", "历史去重", "智能评分", "结构化输出", "生成搜索报告"
+            "寻找关键联系人", "邮箱验证", "历史查重", "智能评分", "结构化输出", "生成搜索报告"
     };
 
     @Data
@@ -386,17 +386,20 @@ public class LeadHunterService {
 
             // ── 8. 历史去重 ──
             step(rs, sessionId, 8);
-            int[] dedupRes = dedup(sessionId, userId, companies, contacts);
-            rs.stats.setDuplicates(dedupRes[0]);
-            rs.stats.setRejected(rs.stats.getRejected() + dedupRes[1]);
-            detail(rs, sessionId, 8, "历史重复公司 " + dedupRes[1] + " 家、重复联系人 " + dedupRes[0] + " 个已排除");
+            DedupResult dedupRes = dedup(sessionId, userId, companies, contacts);
+            rs.stats.setDuplicates(dedupRes.historyCompanies());
+            rs.stats.setRejected(countInactiveCompanies(companies));
+            detail(rs, sessionId, 8, "历史已出现公司 " + dedupRes.historyCompanies() + " 家、联系人 "
+                    + dedupRes.historyContacts() + " 个，已保留本次最新结果"
+                    + (dedupRes.currentContactDuplicates() > 0
+                    ? "；本任务合并重复联系人 " + dedupRes.currentContactDuplicates() + " 个" : ""));
             done(rs, sessionId, 8);
 
             // ── 9. 智能评分 ──
             step(rs, sessionId, 9);
-            scoring(companies, contacts, icp);
+            scoring(companies, contacts, icp, req);
             int overTarget = trimToTarget(companies, contacts, target);
-            rs.stats.setRejected(rs.stats.getRejected() + overTarget);
+            rs.stats.setRejected(countInactiveCompanies(companies));
             detail(rs, sessionId, 9, "ICP 匹配分 + 联系人决策力分已计算"
                     + (overTarget > 0 ? "，已保留最高分的 " + target + " 家" : ""));
             done(rs, sessionId, 9);
@@ -404,15 +407,15 @@ public class LeadHunterService {
             // ── 10. 结构化输出（更新公司 + 插入联系人） ──
             step(rs, sessionId, 10);
             saveAll(sessionId, companies, contacts);
-            rs.stats.setFinalLeads((int) companies.stream().filter(c -> c.getDeleted() == null || c.getDeleted() == 0).count());
+            rs.stats.setFinalLeads((int) companies.stream().filter(this::isActiveCompany).count());
             detail(rs, sessionId, 10, "最终线索 " + rs.stats.getFinalLeads() + " 条已入库");
             done(rs, sessionId, 10);
 
             // ── 11. 完成 ──
             step(rs, sessionId, 11);
-            detail(rs, sessionId, 11, "发现 " + rs.stats.getDiscovered() + " → 公司去重/剔除 " + rs.stats.getRejected()
+            detail(rs, sessionId, 11, "发现 " + rs.stats.getDiscovered() + " → 本次筛选 " + rs.stats.getRejected()
                     + " → 最终 " + rs.stats.getFinalLeads()
-                    + (rs.stats.getDuplicates() > 0 ? "；联系人去重 " + rs.stats.getDuplicates() : ""));
+                    + (rs.stats.getDuplicates() > 0 ? "；其中历史已出现 " + rs.stats.getDuplicates() + " 家（仍保留）" : ""));
             done(rs, sessionId, 11);
             finish(rs, sessionId, "done", null);
             rs.status = "done";
@@ -537,7 +540,8 @@ public class LeadHunterService {
                 + "；客户类型=" + (req.getCustomerTypes() == null ? "" : String.join(",", req.getCustomerTypes()))
                 + "；产品=" + (req.getProducts() == null ? "" : String.join(",", req.getProducts()));
         try {
-            String raw = callLlmWithTimeout(system, user, 45, null);
+            // ICP 只是增强项；搜索和联系人发现有确定性降级路径，不能让慢/欠费模型拖住整条链路。
+            String raw = callLlmWithTimeout(system, user, 20, null);
             int s = raw.indexOf('{'), e = raw.lastIndexOf('}');
             if (s >= 0 && e > s) {
                 JSONObject o = JSON.parseObject(raw.substring(s, e + 1));
@@ -650,18 +654,38 @@ public class LeadHunterService {
 
     private List<String> reliableQueriesForType(String type, String scope) {
         String normalizedType = type == null ? "" : type.toLowerCase(Locale.ROOT).trim();
-        return switch (normalizedType) {
-            case "end user" -> reliableEndUserQueries(scope);
-            case "distributor" -> List.of("commercial audio equipment distributor " + scope);
-            case "reseller" -> List.of("audio visual equipment reseller " + scope);
-            case "system integrator" -> List.of("commercial AV system integrator " + scope);
-            case "dealer" -> List.of("professional audio visual equipment dealer " + scope);
-            case "project contractor" -> List.of("low voltage audio visual contractor " + scope);
-            case "online shop" -> List.of("professional audio visual equipment online store " + scope);
-            case "voip/cloud service provider" -> List.of("VoIP cloud communications service provider " + scope);
-            case "consultancy" -> List.of("audio visual consulting firm " + scope);
-            default -> List.of(type + " commercial audio visual communication equipment " + scope);
+        if ("end user".equals(normalizedType)) return reliableEndUserQueries(scope);
+        String base = switch (normalizedType) {
+            case "distributor" -> "commercial audio equipment distributor";
+            case "reseller" -> "audio visual equipment reseller";
+            case "system integrator" -> "commercial AV system integrator";
+            case "dealer" -> "professional audio visual equipment dealer";
+            case "project contractor" -> "low voltage audio visual contractor";
+            case "online shop" -> "professional audio visual equipment online store";
+            case "voip/cloud service provider" -> "VoIP cloud communications service provider";
+            case "consultancy" -> "audio visual consulting firm";
+            default -> type + " commercial audio visual communication equipment";
         };
+        return regionalBusinessQueries(base, scope);
+    }
+
+    /**
+     * 美国大区名称在普通搜索中约束力较弱，增加重点州查询提高区域召回率。
+     * 保留大区总查询，仍可发现跨州经营、在目标区域设有办公室的全国性公司。
+     */
+    private List<String> regionalBusinessQueries(String base, String scope) {
+        String normalized = scope == null ? "" : scope.toLowerCase(Locale.ROOT);
+        List<String> locations;
+        if (normalized.contains("western united states")) {
+            locations = List.of(scope, "California", "Washington", "Oregon", "Arizona", "Colorado", "Utah", "Nevada");
+        } else if (normalized.contains("southern united states")) {
+            locations = List.of(scope, "Texas", "Florida", "Georgia", "North Carolina", "Virginia", "Tennessee");
+        } else if (normalized.contains("eastern united states")) {
+            locations = List.of(scope, "New York", "New Jersey", "Pennsylvania", "Massachusetts", "Illinois", "Ohio");
+        } else {
+            locations = List.of(scope);
+        }
+        return locations.stream().map(location -> (base + " " + location).trim()).toList();
     }
 
     private List<String> reliableEndUserQueries(String scope) {
@@ -794,7 +818,8 @@ public class LeadHunterService {
             detail(rs, sessionId, 5, "企业官网联网补全: " + verifyIndex + "/" + needSearch.size());
         }
 
-        // 5.3 只依据明确的地址/业务证据做剔除；未知信息保留，避免误杀。
+        // 5.3 召回优先：证据不足、总部不在目标销售区域、启发式类型不匹配只影响评分，
+        // 不再硬删除。只有公开证据明确表明是媒体等非客户页面时才剔除。
         int qualityRejected = 0;
         for (LeadHuntCompany c : companies) {
             if (!StringUtils.hasText(c.getCustomerType())) c.setCustomerType("Unknown");
@@ -807,9 +832,9 @@ public class LeadHunterService {
                 qualityRejected++;
             }
         }
-        rs.stats.setRejected(rs.stats.getRejected() + qualityRejected);
+        rs.stats.setRejected(countInactiveCompanies(companies));
         if (qualityRejected > 0) {
-            detail(rs, sessionId, 5, "联网补全完成，已剔除 " + qualityRejected + " 家区域或客户类型不符的公司");
+            detail(rs, sessionId, 5, "联网补全完成，已剔除 " + qualityRejected + " 家明确无关的公司");
         }
     }
 
@@ -990,35 +1015,54 @@ public class LeadHunterService {
         }
     }
 
-    /** Step 8 · 历史去重（跨会话域名 + 邮箱；同会话邮箱） */
-    private int[] dedup(Long sessionId, Long userId, List<LeadHuntCompany> companies, List<LeadHuntContact> contacts) {
-        int dupContacts = 0, rejectedCompanies = 0;
-        // 公司：跨会话域名重复 → 逻辑删除
+    private record DedupResult(int currentContactDuplicates, int historyCompanies, int historyContacts) { }
+
+    /**
+     * Step 8 · 查重。
+     * 同一任务里的重复联系人会合并；历史任务中出现过的公司/联系人只做提示，不能删除本次结果。
+     * 用户重复运行同一条件时需要拿到最新快照，历史命中不等于无效线索。
+     */
+    private DedupResult dedup(Long sessionId, Long userId, List<LeadHuntCompany> companies,
+                              List<LeadHuntContact> contacts) {
+        int historyCompanies = 0;
         for (LeadHuntCompany c : companies) {
-            if (c.getDomain() != null && c.getId() != null
+            if (isActiveCompany(c) && StringUtils.hasText(c.getDomain()) && c.getId() != null
                     && companyMapper.countHistoryByDomain(sessionId, userId, c.getDomain()) > 0) {
-                companyMapper.deleteById(c.getId());
-                c.setDeleted(1);
-                rejectedCompanies++;
+                historyCompanies++;
             }
         }
-        Set<Long> rejectedCompanyIds = companies.stream().filter(c -> c.getDeleted() != null && c.getDeleted() == 1)
+        Set<Long> inactiveCompanyIds = companies.stream().filter(c -> !isActiveCompany(c))
                 .map(LeadHuntCompany::getId).collect(Collectors.toSet());
-        Set<String> sessionEmails = new HashSet<>(contactMapper.selectEmailsBySession(sessionId));
+        Set<String> sessionEmails = contactMapper.selectEmailsBySession(sessionId).stream()
+                .filter(StringUtils::hasText)
+                .map(email -> email.trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toCollection(HashSet::new));
+        int currentContactDuplicates = 0;
+        int historyContacts = 0;
         Iterator<LeadHuntContact> it = contacts.iterator();
         while (it.hasNext()) {
             LeadHuntContact ct = it.next();
-            if (ct.getCompanyId() != null && rejectedCompanyIds.contains(ct.getCompanyId())) { it.remove(); dupContacts++; continue; }
-            if (ct.getEmail() == null) continue;
-            if (sessionEmails.contains(ct.getEmail())) { it.remove(); dupContacts++; continue; }
-            if (contactMapper.countHistoryByEmail(sessionId, userId, ct.getEmail()) > 0) { it.remove(); dupContacts++; continue; }
-            sessionEmails.add(ct.getEmail());
+            if (ct.getCompanyId() != null && inactiveCompanyIds.contains(ct.getCompanyId())) {
+                it.remove();
+                continue;
+            }
+            if (!StringUtils.hasText(ct.getEmail())) continue;
+            String normalizedEmail = ct.getEmail().trim().toLowerCase(Locale.ROOT);
+            if (!sessionEmails.add(normalizedEmail)) {
+                it.remove();
+                currentContactDuplicates++;
+                continue;
+            }
+            if (contactMapper.countHistoryByEmail(sessionId, userId, normalizedEmail) > 0) {
+                historyContacts++;
+            }
         }
-        return new int[]{dupContacts, rejectedCompanies};
+        return new DedupResult(currentContactDuplicates, historyCompanies, historyContacts);
     }
 
     /** Step 9 · 评分：ICP 匹配分 + 联系人决策力分 */
-    private void scoring(List<LeadHuntCompany> companies, List<LeadHuntContact> contacts, IcpResult icp) {
+    private void scoring(List<LeadHuntCompany> companies, List<LeadHuntContact> contacts, IcpResult icp,
+                         StartRequest request) {
         for (LeadHuntCompany c : companies) {
             int score = 40;
             String text = ((c.getIndustry() == null ? "" : c.getIndustry()) + " "
@@ -1031,7 +1075,8 @@ public class LeadHunterService {
             if ("verified".equals(c.getVerificationStatus())) score += 10;
             else if ("enriched".equals(c.getVerificationStatus())) score += 5;
             if (StringUtils.hasText(c.getAddress()) || StringUtils.hasText(c.getCity())) score += 5;
-            c.setIcpScore(Math.min(100, score));
+            score += targetFitAdjustment(c, request);
+            c.setIcpScore(Math.max(0, Math.min(100, score)));
         }
         Map<Long, Integer> companyScore = companies.stream()
                 .collect(Collectors.toMap(LeadHuntCompany::getId, LeadHuntCompany::getIcpScore));
@@ -1466,6 +1511,10 @@ public class LeadHunterService {
         return company != null && (company.getDeleted() == null || company.getDeleted() == 0);
     }
 
+    private int countInactiveCompanies(List<LeadHuntCompany> companies) {
+        return (int) companies.stream().filter(company -> !isActiveCompany(company)).count();
+    }
+
     private boolean hasCompanyInfoGap(LeadHuntCompany company) {
         return !StringUtils.hasText(company.getIndustry())
                 || !StringUtils.hasText(company.getMajorBusiness())
@@ -1703,23 +1752,45 @@ public class LeadHunterService {
         };
     }
 
-    private String companyRejectReason(LeadHuntCompany company, List<String> requestedCustomerTypes) {
-        if (isSpecificUsRegion(company.getCountry())
-                && normalizeUsState(company.getState(), String.join(" ", nullToEmpty(company.getAddress()),
-                nullToEmpty(company.getCity()), nullToEmpty(company.getState()))) == null) {
-            return "target-region-unverified";
-        }
-        if (!addressesMatchCountry(company.getAddress(), company.getCity(), company.getState(), company.getZip(),
-                company.getCountry(), company.getDomain())) return "target-region-mismatch";
-        if (requestedCustomerTypes != null && !requestedCustomerTypes.isEmpty()) {
-            String actual = normalizeCustomerType(company.getCustomerType());
-            if (!StringUtils.hasText(actual) || "unknown".equals(actual)) return "customer-type-unverified";
-            boolean requested = requestedCustomerTypes.stream()
-                    .map(LeadHunterService::normalizeCustomerType)
-                    .anyMatch(actual::equals);
-            if (!requested) return "customer-type-mismatch";
+    static String companyRejectReason(LeadHuntCompany company, List<String> requestedCustomerTypes) {
+        String actual = normalizeCustomerType(company.getCustomerType());
+        boolean otherRequested = requestedCustomerTypes != null && requestedCustomerTypes.stream()
+                .map(LeadHunterService::normalizeCustomerType)
+                .anyMatch("other"::equals);
+        if (!otherRequested && "other".equals(actual)
+                && "media & publishing".equalsIgnoreCase(company.getIndustry())) {
+            return "clearly-irrelevant-media";
         }
         return null;
+    }
+
+    /** 目标条件用于排序而不是硬过滤，避免证据缺失或全国性公司被误删。 */
+    static int targetFitAdjustment(LeadHuntCompany company, StartRequest request) {
+        if (company == null || request == null) return 0;
+        int adjustment = 0;
+        List<String> requestedTypes = request.getCustomerTypes();
+        if (requestedTypes != null && !requestedTypes.isEmpty()) {
+            String actual = normalizeCustomerType(company.getCustomerType());
+            if (StringUtils.hasText(actual) && !"unknown".equals(actual)) {
+                boolean exact = requestedTypes.stream().map(LeadHunterService::normalizeCustomerType)
+                        .anyMatch(actual::equals);
+                adjustment += exact ? 15 : -10;
+            }
+        }
+        List<String> countries = request.getCountries();
+        if (countries != null) {
+            for (String country : countries) {
+                if (!isSpecificUsRegion(country)) continue;
+                String state = normalizeUsState(company.getState(), String.join(" ",
+                        nullToEmpty(company.getAddress()), nullToEmpty(company.getCity()),
+                        nullToEmpty(company.getState())));
+                if (state == null) continue;
+                adjustment += addressesMatchCountry(company.getAddress(), company.getCity(), state,
+                        company.getZip(), country, company.getDomain()) ? 15 : -15;
+                break;
+            }
+        }
+        return adjustment;
     }
 
     private static String normalizeCustomerType(String value) {

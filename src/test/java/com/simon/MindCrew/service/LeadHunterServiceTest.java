@@ -1,6 +1,9 @@
 package com.simon.MindCrew.service;
 
+import com.simon.MindCrew.entity.LeadHuntCompany;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -51,5 +54,45 @@ class LeadHunterServiceTest {
         assertEquals("System Integrator", LeadHunterService.classifyCustomerType(
                 "A life safety systems market leader providing the systems we install"));
         assertNull(LeadHunterService.extractCompanySize("A growing global company with a large team"));
+    }
+
+    @Test
+    void keepsUnverifiedOrOutOfRegionProspectsAndRejectsOnlyClearlyIrrelevantPages() {
+        LeadHuntCompany nationalIntegrator = new LeadHuntCompany();
+        nationalIntegrator.setCountry("United States - West");
+        nationalIntegrator.setState("PA");
+        nationalIntegrator.setCustomerType("System Integrator");
+        nationalIntegrator.setIndustry("Professional Audio Visual");
+        assertNull(LeadHunterService.companyRejectReason(nationalIntegrator, List.of("System Integrator")));
+
+        LeadHuntCompany unknown = new LeadHuntCompany();
+        unknown.setCountry("United States - West");
+        unknown.setCustomerType("Unknown");
+        assertNull(LeadHunterService.companyRejectReason(unknown, List.of("System Integrator")));
+
+        LeadHuntCompany media = new LeadHuntCompany();
+        media.setCustomerType("Other");
+        media.setIndustry("Media & Publishing");
+        assertEquals("clearly-irrelevant-media",
+                LeadHunterService.companyRejectReason(media, List.of("System Integrator")));
+    }
+
+    @Test
+    void ranksExactTerritoryAndCustomerTypeEvidenceAboveMismatches() {
+        LeadHunterService.StartRequest request = new LeadHunterService.StartRequest();
+        request.setCountries(List.of("United States - West"));
+        request.setCustomerTypes(List.of("System Integrator"));
+
+        LeadHuntCompany westernIntegrator = new LeadHuntCompany();
+        westernIntegrator.setCountry("United States - West");
+        westernIntegrator.setState("CA");
+        westernIntegrator.setCustomerType("System Integrator");
+        LeadHuntCompany easternManufacturer = new LeadHuntCompany();
+        easternManufacturer.setCountry("United States - West");
+        easternManufacturer.setState("PA");
+        easternManufacturer.setCustomerType("Other");
+
+        assertTrue(LeadHunterService.targetFitAdjustment(westernIntegrator, request)
+                > LeadHunterService.targetFitAdjustment(easternManufacturer, request));
     }
 }
